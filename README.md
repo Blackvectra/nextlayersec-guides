@@ -43,6 +43,8 @@ This repository provides structured and practical resources to support defensive
 - Clone the repository:  
   ```bash
   git clone https://github.com/yourusername/cybersecurity-guides.git
-```
+  ```
+  ---
+  
   “The best defense is a well-informed offense and a prepared response.”
 — Blackvectra
