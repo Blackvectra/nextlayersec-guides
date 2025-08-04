@@ -27,8 +27,8 @@ PowerShell is a powerful Windows scripting tool frequently abused by attackers f
 
 ### Detection Sources
 
-- Windows Event Logs ([Event ID 4104: PowerShell Script Block Logging](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_script_block_logging))  
-- Sysmon logs ([Event ID 1: Process Creation](https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon))  
+- Windows Event Logs ([Event ID 4104: PowerShell Script Block Logging](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_script_block_logging))  
+- Sysmon logs ([Event ID 1: Process Creation](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon))  
 - Endpoint Detection and Response (EDR) alerts  
 - Network traffic to suspicious URLs  
 
@@ -76,10 +76,10 @@ PowerShell is a powerful Windows scripting tool frequently abused by attackers f
 
 ## References
 
-- [Microsoft PowerShell Script Block Logging](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_script_block_logging)  
-- [Sysmon Download and Configuration](https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon)  
+- [Microsoft PowerShell Script Block Logging](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_script_block_logging)  
+- [Sysmon Download and Configuration](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon)  
 - [MITRE ATT&CK: PowerShell (T1086)](https://attack.mitre.org/techniques/T1086/)  
-- [Detecting PowerShell Attacks with Sysmon (SANS Whitepaper)](https://www.sans.org/white-papers/39864/)  
+- [Detecting PowerShell Attacks with Sysmon (SANS Whitepaper PDF)](https://www.sans.org/white-papers/39864/detecting-powershell-attacks-with-sysmon-38169)  
 
 ---
 
