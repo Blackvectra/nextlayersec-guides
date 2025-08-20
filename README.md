@@ -1,50 +1,49 @@
 # Cybersecurity Guides
 
-Comprehensive blue team playbooks, detection workflows, purple team lab guidance, and threat intelligence documentation designed for SOC teams, cybersecurity professionals, and students.
+Comprehensive blue-team playbooks, detection workflows, purple-team lab guidance, and threat intelligence documentation designed for SOC teams, cybersecurity professionals, and students.
+
+> “The best defense is a well‑informed offense and a prepared response.” — Blackvectra
 
 ---
 
 ## Overview
 
-This repository provides structured and practical resources to support defensive security operations and collaborative red-blue team exercises. Whether you are an analyst, incident responder, or learner, you will find valuable guides to improve detection capabilities, incident handling, and threat understanding.
+This repository provides structured, practical resources to support defensive security operations and collaborative red–blue team exercises. Whether you are an analyst, incident responder, or learner, you’ll find guides to improve detection capabilities, incident handling, and threat understanding.
 
 ---
 
 ## Contents
 
-- **Blue Team Playbooks:** Step-by-step response procedures for common security incidents.  
-- **Detection Workflows:** Practical workflows for identifying and investigating threats using SIEM and endpoint data.  
-- **Purple Team Labs:** Hands-on exercises combining offensive and defensive tactics to enhance detection and response.  
-- **Threat Intelligence:** Documentation and analysis of threat actors, TTPs (Tactics, Techniques, and Procedures), and intelligence sources.
+- **Frameworks** — Plain‑English breakdowns + how to use:
+  - [NIST CSF](frameworks/nist-csf.md)
+  - [MITRE ATT&CK](frameworks/mitre-attack.md)
+  - [ISO 27001](frameworks/iso-27001.md)
+  - [IRS Publication 1075](frameworks/irs-pub-1075.md)
+  - [SOC 2](frameworks/soc2.md)
+- **Playbooks** — Incident response procedures (coming soon)
+- **Detection Workflows** — Investigation checklists and triage flows (coming soon)
+- **Purple Team Labs** — Adversary emulation + detections (coming soon)
+- **Threat Intelligence** — Actor/TTP notes and sources (coming soon)
+- **Tools** — Curated tools you’ll actually use:  
+  - [Blue Team & IR Tools](tools/blue-team-tools.md)
+- **Templates** — Copy‑and‑use docs:
+  - [Incident Report Template](incidents/template.md)
+  - [CVE → Framework Mapping Template](vulnerabilities/template.md)
 
 ---
 
 ## Usage
 
-1. **Explore the folders** corresponding to your area of interest (blue team, purple team, threat intel).  
-2. **Use playbooks and workflows** to build or improve your SOC processes.  
-3. **Follow lab guides** to practice detection and response in realistic scenarios.  
-4. **Update and customize** the content to fit your organization or learning goals.  
-5. **Contribute:** Pull requests are welcome to add new guides, improve existing ones, or share intelligence.
-
----
-
-## Who Is This For?
-
-- Security Operations Center (SOC) analysts and managers  
-- Incident responders and threat hunters  
-- Cybersecurity students and educators  
-- Red and purple team practitioners  
+1. Browse **Frameworks** for quick context and practical “how to use” guidance.  
+2. Use **Templates** to document incidents and CVE remediation with framework mapping.  
+3. Leverage **Tools** for day‑to‑day security tasks.  
+4. Customize any guide to match your environment or learning goals.  
+5. Contributions (PRs) are welcome.
 
 ---
 
 ## Getting Started
 
-- Clone the repository:  
-  ```bash
-  git clone https://github.com/yourusername/cybersecurity-guides.git
-  ```
-  ---
-  
-  “The best defense is a well-informed offense and a prepared response.”
-— Blackvectra
+```bash
+git clone https://github.com/<your-username>/cybersecurity-guides.git
+cd cybersecurity-guides
