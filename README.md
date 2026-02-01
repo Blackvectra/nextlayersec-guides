@@ -34,7 +34,7 @@ This repository provides structured, practical resources to support defensive se
 - **Tools** — Curated tools you’ll actually use:
   - [Blue Team & IR Tools](tools/blue-team-tools.md)
 - **Templates** — Copy-and-use docs:
-  - [Incident Report Template](incidents/template.md)
+  - [Incident Report Template](incident-reports/template.md)
   - [CVE → Framework Mapping Template](vulnerabilities/template.md)
 
 ---
