@@ -1,0 +1,151 @@
+name: Daily TODO reminder
+
+# Fires every day at 13:00 UTC = 8:00 AM CDT (US Central, summer)
+# = 7:00 AM CST (US Central, winter). GitHub Actions cron does not
+# auto-adjust for DST; edit this expression if the wintertime shift bothers you.
+on:
+  schedule:
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  open-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Open today's focus issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Compute "today" in US Central so the title matches the user's local day,
+            // independent of the UTC cron hour.
+            const fmt = new Intl.DateTimeFormat('en-CA', {
+              timeZone: 'America/Chicago',
+              year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short'
+            });
+            const parts = Object.fromEntries(fmt.formatToParts(new Date()).map(p => [p.type, p.value]));
+            const isoDate = `${parts.year}-${parts.month}-${parts.day}`;
+            const weekday  = parts.weekday; // Mon, Tue, Wed, ...
+
+            const lanes = {
+              Mon: {
+                lane: 'CVE',
+                focus: 'Write up one CVE — start with a fresh CISA KEV addition.',
+                hint:  'Use `vulnerabilities/template.md`. Link to the relevant `detections/` rule when possible.',
+                links: [
+                  ['CISA KEV catalog', 'https://www.cisa.gov/known-exploited-vulnerabilities-catalog'],
+                  ['vulnerabilities/template.md', 'vulnerabilities/template.md'],
+                  ['TODO — CVEs', 'TODO.md#cves-to-write-up']
+                ]
+              },
+              Tue: {
+                lane: 'Detection',
+                focus: 'Add one KQL or Sigma rule from the backlog.',
+                hint:  'One detection per file. Pair `<name>.kql` with `<name>.md` (intent / data sources / FPs / tuning).',
+                links: [
+                  ['detections/kql/_template.kql', 'detections/kql/_template.kql'],
+                  ['detections/sigma/_template.yml', 'detections/sigma/_template.yml'],
+                  ['TODO — detections', 'TODO.md#detections-kql--sigma']
+                ]
+              },
+              Wed: {
+                lane: 'Playbook',
+                focus: 'Publish or expand one playbook from the priority list.',
+                hint:  'Follow the structure in `blue-team-playbooks/_template.md`.',
+                links: [
+                  ['blue-team-playbooks/_template.md', 'blue-team-playbooks/_template.md'],
+                  ['TODO — playbooks', 'TODO.md#playbooks-priority-order']
+                ]
+              },
+              Thu: {
+                lane: 'Threat intel',
+                focus: 'Drop one actor profile, campaign write-up, or TTP roundup.',
+                hint:  'Templates live under `threat-intelligence/`. Keep it short and link primary sources.',
+                links: [
+                  ['threat-intelligence/', 'threat-intelligence/'],
+                  ['TODO — threat intel', 'TODO.md#threat-intel']
+                ]
+              },
+              Fri: {
+                lane: 'Tools / frameworks',
+                focus: 'Review one tool or deepen one framework page.',
+                hint:  'Add a tool to `tools/blue-team-tools.md` or expand a `frameworks/*.md` page with practical "how to use".',
+                links: [
+                  ['tools/blue-team-tools.md', 'tools/blue-team-tools.md'],
+                  ['frameworks/', 'frameworks/']
+                ]
+              },
+              Sat: {
+                lane: 'Cleanup',
+                focus: 'Repo hygiene — run lint, fix broken links, prune stale TODOs.',
+                hint:  '`npx markdownlint-cli2 "**/*.md"` locally, then triage anything CI is unhappy about.',
+                links: [
+                  ['CONTRIBUTING.md', 'CONTRIBUTING.md'],
+                  ['TODO — repo hygiene', 'TODO.md#repo-hygiene']
+                ]
+              },
+              Sun: {
+                lane: 'Changelog & review',
+                focus: 'Update `CHANGELOG.md` with the week\\'s additions; plan next week.',
+                hint:  'Look at this week\\'s merged PRs, add bullets to the `[Unreleased]` section, and re-prioritize `TODO.md`.',
+                links: [
+                  ['CHANGELOG.md', 'CHANGELOG.md'],
+                  ['TODO.md', 'TODO.md']
+                ]
+              }
+            };
+
+            const today = lanes[weekday] || lanes.Mon;
+            const title = `Daily focus — ${isoDate} — ${today.lane}`;
+            const body = [
+              `**Today's lane: ${today.lane}**`,
+              '',
+              `**Focus.** ${today.focus}`,
+              '',
+              `_Hint:_ ${today.hint}`,
+              '',
+              '## Links',
+              ...today.links.map(([label, href]) =>
+                `- [\`${label}\`](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/${href})`),
+              '',
+              '## Checklist',
+              '- [ ] Branch off `main`',
+              '- [ ] Write the thing',
+              '- [ ] Run `markdownlint-cli2` locally',
+              '- [ ] Open a PR (draft is fine)',
+              '- [ ] Tick the matching line in `TODO.md`',
+              '- [ ] Add a bullet under `CHANGELOG.md` → `[Unreleased]`',
+              '',
+              '---',
+              `_Auto-generated by \`.github/workflows/daily-reminder.yml\`._`
+            ].join('\n');
+
+            // Idempotency: if today's issue already exists (e.g., manual dispatch
+            // after the cron), skip creation.
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'daily-reminder',
+              per_page: 50
+            });
+            const dupe = existing.data.find(i => i.title === title);
+            if (dupe) {
+              core.info(`Reminder already exists: ${dupe.html_url}`);
+              return;
+            }
+
+            const created = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['daily-reminder', `lane:${today.lane.toLowerCase().replace(/ .*$/, '')}`],
+              assignees: ['Blackvectra']
+            });
+            core.info(`Created reminder: ${created.data.html_url}`);
