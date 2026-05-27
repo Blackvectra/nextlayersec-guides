@@ -27,15 +27,24 @@ This repository provides structured, practical resources to support defensive se
   - [ISO 27001](frameworks/iso-27001.md)
   - [IRS Publication 1075](frameworks/irs-pub-1075.md)
   - [SOC 2](frameworks/soc2.md)
-- **Playbooks** — Incident response procedures (coming soon)
-- **Detection Workflows** — Investigation checklists and triage flows (coming soon)
-- **Purple Team Labs** — Adversary emulation + detections (coming soon)
-- **Threat Intelligence** — Actor/TTP notes and sources (coming soon)
+- **[Blue Team Playbooks](blue-team-playbooks/)** — Incident response procedures (scenario index + template).
+- **[Detection Workflows](detection-workflows/)** — Investigation checklists and triage flows.
+- **[Detections](detections/)** — Reusable rule content:
+  - [KQL](detections/kql/) (Sentinel / Defender XDR / Log Analytics)
+  - [Sigma](detections/sigma/) (vendor-neutral)
+  - [Splunk](detections/splunk/) (SPL)
+  - [YARA](detections/yara/)
+- **[Vulnerabilities](vulnerabilities/)** — Curated CVE write-ups (CISA KEV focus).
+- **[Purple Team Labs](purple-team-labs/)** — Adversary emulation paired with the detections that should fire.
+- **[Threat Intelligence](threat-intelligence/)** — Actor profiles, campaigns, and TTP roundups.
 - **Tools** — Curated tools you’ll actually use:
   - [Blue Team & IR Tools](tools/blue-team-tools.md)
 - **Templates** — Copy-and-use docs:
   - [Incident Report Template](incident-reports/template.md)
   - [CVE → Framework Mapping Template](vulnerabilities/template.md)
+
+## Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md) for structure, templates, and CI checks. Open backlog in [TODO.md](TODO.md). Notable changes tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

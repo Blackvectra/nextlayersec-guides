@@ -1,0 +1,16 @@
+// Title: <short, action-oriented title>
+// Technique: T<id> - <name>
+// Data source(s): <e.g., DeviceProcessEvents, SecurityEvent, SigninLogs>
+// Author: <handle>
+// Last updated: YYYY-MM-DD
+//
+// Description:
+//   <one or two sentences describing what this detects and why it matters>
+
+let lookback = 1d;
+DeviceProcessEvents
+| where Timestamp > ago(lookback)
+| where FileName =~ "powershell.exe"
+| where ProcessCommandLine has_any ("-enc", "-EncodedCommand", "FromBase64String")
+| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName
+| sort by Timestamp desc

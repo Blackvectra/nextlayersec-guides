@@ -1,0 +1,25 @@
+title: <Short detection title>
+id: <uuid - generate with `uuidgen`>
+status: experimental
+description: <one paragraph: what this catches and why it matters>
+author: <handle>
+date: YYYY/MM/DD
+modified: YYYY/MM/DD
+references:
+  - https://attack.mitre.org/techniques/T<id>/
+tags:
+  - attack.<tactic>
+  - attack.t<id>
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    Image|endswith: '\powershell.exe'
+    CommandLine|contains:
+      - ' -enc '
+      - ' -EncodedCommand '
+  condition: selection
+falsepositives:
+  - Legitimate admin tooling that uses encoded commands
+level: medium

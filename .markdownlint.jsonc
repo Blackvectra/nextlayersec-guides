@@ -1,0 +1,8 @@
+{
+  // Defaults are mostly fine. Loosen a few rules that fight long-form security docs.
+  "default": true,
+  "MD013": false,   // line length — wrap naturally
+  "MD024": { "siblings_only": true }, // allow duplicate headings in different sections
+  "MD033": false,   // allow inline HTML when needed
+  "MD041": false    // first line need not be a top-level heading (templates use frontmatter-like blocks)
+}
