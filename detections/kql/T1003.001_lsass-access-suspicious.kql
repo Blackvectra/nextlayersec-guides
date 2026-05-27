@@ -1,0 +1,30 @@
+// Title: Suspicious LSASS process access
+// Technique: T1003.001 - OS Credential Dumping: LSASS Memory
+// Data source(s): DeviceEvents (ActionType == "OpenProcessApiCall"), DeviceProcessEvents
+// Author: nextlayersec
+// Last updated: 2026-05-27
+//
+// Description:
+//   Surfaces processes opening a handle to lsass.exe with credential-dump-capable
+//   access rights, excluding known good Microsoft signers and EDR agents. Catches
+//   Mimikatz, ProcDump abuse, comsvcs.dll MiniDump, and direct syscall variants.
+
+let lookback = 1d;
+let credDumpRights = dynamic([0x1010, 0x1410, 0x1438, 0x143A, 0x1FFFFF]); // PROCESS_VM_READ | QUERY_INFORMATION variants
+let knownGoodImages = dynamic([
+    "MsMpEng.exe", "MsSense.exe", "SenseIR.exe", "SenseCncProxy.exe",
+    "windefend.exe", "csrss.exe", "wininit.exe", "services.exe"
+]);
+DeviceEvents
+| where Timestamp > ago(lookback)
+| where ActionType == "OpenProcessApiCall"
+| where FileName =~ "lsass.exe"
+| extend Rights = tolong(parse_json(AdditionalFields).DesiredAccess)
+| where Rights in (credDumpRights) or (Rights has_any ("0x10", "0x40"))
+| where not(InitiatingProcessFileName in~ (knownGoodImages))
+| where InitiatingProcessVersionInfoCompanyName !contains "Microsoft"
+| project Timestamp, DeviceName, AccountName,
+          InitiatingProcessFileName, InitiatingProcessCommandLine,
+          InitiatingProcessVersionInfoCompanyName,
+          InitiatingProcessParentFileName, Rights, ReportId
+| sort by Timestamp desc

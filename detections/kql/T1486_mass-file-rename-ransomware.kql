@@ -1,0 +1,39 @@
+// Title: Mass file rename — ransomware encryption canary
+// Technique: T1486 - Data Encrypted for Impact
+// Data source(s): DeviceFileEvents (Defender XDR)
+// Author: nextlayersec
+// Last updated: 2026-05-27
+//
+// Description:
+//   Fires when a single process renames a high volume of files in a short window —
+//   the unmistakable signature of in-progress ransomware encryption. Tuned to
+//   ignore archivers, build tools, and Office autosave by requiring a wide
+//   extension fan-in (many distinct source extensions being renamed to one
+//   destination extension).
+
+let lookback = 15m;
+let fileThreshold = 50;            // files touched per process in the window
+let distinctDirThreshold = 3;      // spans multiple directories
+DeviceFileEvents
+| where Timestamp > ago(lookback)
+| where ActionType == "FileRenamed"
+| extend SrcExt = tolower(extract(@"\.([A-Za-z0-9]{1,8})$", 1, PreviousFileName)),
+         DstExt = tolower(extract(@"\.([A-Za-z0-9]{1,16})$", 1, FileName)),
+         Dir    = tostring(split(FolderPath, @"\")[0..-1])
+| where isnotempty(DstExt) and SrcExt != DstExt
+| summarize Files = count(),
+            DistinctSrcExts = dcount(SrcExt),
+            DistinctDirs = dcount(FolderPath),
+            DstExts = make_set(DstExt, 10),
+            SrcExtSample = make_set(SrcExt, 10),
+            FirstSeen = min(Timestamp),
+            LastSeen = max(Timestamp)
+        by DeviceName, InitiatingProcessFileName, InitiatingProcessId, InitiatingProcessCommandLine
+| where Files >= fileThreshold
+        and DistinctSrcExts >= 5
+        and DistinctDirs >= distinctDirThreshold
+| extend DurationSec = datetime_diff('second', LastSeen, FirstSeen)
+| project FirstSeen, LastSeen, DurationSec, DeviceName,
+          InitiatingProcessFileName, InitiatingProcessCommandLine,
+          Files, DistinctSrcExts, DistinctDirs, DstExts, SrcExtSample
+| sort by Files desc

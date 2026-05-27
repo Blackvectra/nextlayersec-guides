@@ -15,7 +15,7 @@ Suggested cadence:
 
 ## Playbooks (priority order)
 
-- [ ] Phishing email triage
+- [x] Phishing email triage — [`blue-team-playbooks/phishing-email-triage.md`](blue-team-playbooks/phishing-email-triage.md)
 - [ ] Ransomware outbreak
 - [ ] Business email compromise (BEC)
 - [ ] Credential theft / password spray
@@ -39,12 +39,12 @@ Suggested cadence:
 
 - [ ] T1078.004 — Entra ID risky sign-in followed by mailbox rule creation
 - [ ] T1071.001 — beacon-like outbound HTTPS to rare destination
-- [ ] T1110.003 — password spray against Entra ID / AD
-- [ ] T1486 — mass file rename (ransomware canary)
+- [x] T1110.003 — password spray against Entra ID / AD — [`detections/kql/T1110.003_entra-password-spray.kql`](detections/kql/T1110.003_entra-password-spray.md)
+- [x] T1486 — mass file rename (ransomware canary) — [`detections/kql/T1486_mass-file-rename-ransomware.kql`](detections/kql/T1486_mass-file-rename-ransomware.md)
 - [ ] T1218.011 — rundll32 with unusual command line
 - [ ] T1547.001 — new Run / RunOnce key written by non-installer
 - [ ] T1021.001 — RDP from unusual source
-- [ ] T1003.001 — LSASS access by non-system process
+- [x] T1003.001 — LSASS access by non-system process — [`detections/kql/T1003.001_lsass-access-suspicious.kql`](detections/kql/T1003.001_lsass-access-suspicious.md)
 
 ## CVEs to write up
 

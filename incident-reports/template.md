@@ -42,4 +42,3 @@ What worked, what didn’t, what to improve next time.
 
 ## Attachments / Evidence
 Links to screenshots, exports, tickets.
-

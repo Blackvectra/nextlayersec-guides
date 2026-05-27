@@ -1,8 +1,33 @@
 {
-  // Defaults are mostly fine. Loosen a few rules that fight long-form security docs.
+  // Catch real bugs, not whitespace nits. Long-form security docs use a mix of
+  // tables, inline links, and admin-style bullet lists — strict spacing rules
+  // fight that without improving readability.
   "default": true,
-  "MD013": false,   // line length — wrap naturally
-  "MD024": { "siblings_only": true }, // allow duplicate headings in different sections
-  "MD033": false,   // allow inline HTML when needed
-  "MD041": false    // first line need not be a top-level heading (templates use frontmatter-like blocks)
+
+  // Line length: wrap naturally.
+  "MD013": false,
+
+  // Allow duplicate headings in different sections (e.g., "References" per page section).
+  "MD024": { "siblings_only": true },
+
+  // Allow inline HTML when needed (badges, callouts).
+  "MD033": false,
+
+  // First line need not be a top-level heading (templates use frontmatter-like blocks).
+  "MD041": false,
+
+  // Stylistic spacing — disabled to allow compact reference docs.
+  "MD022": false,   // blanks-around-headings
+  "MD031": false,   // blanks-around-fences
+  "MD032": false,   // blanks-around-lists
+  "MD058": false,   // blanks-around-tables
+
+  // Bare URLs are fine in tool / reference lists.
+  "MD034": false,
+
+  // Fenced code language tag — recommended but not required.
+  "MD040": false,
+
+  // Table column alignment — pedantic for hand-edited tables.
+  "MD060": false
 }
