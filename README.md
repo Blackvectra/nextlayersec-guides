@@ -11,7 +11,7 @@ Comprehensive blue-team playbooks, detection workflows, purple-team lab guidance
 - [Contents](#contents)
 - [Usage](#usage)
 - [Getting Started](#getting-started)
-- [Related Repositories](#-related-repositories)
+- [Contributing](#contributing)
 
 ---
 

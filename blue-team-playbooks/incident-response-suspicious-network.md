@@ -84,4 +84,3 @@ This playbook guides Security Operations Center (SOC) analysts through the detec
 
 > _“Detect early, respond decisively, and learn continuously.”_  
 > — Blackvectra
-
