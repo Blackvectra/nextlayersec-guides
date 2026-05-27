@@ -1,0 +1,72 @@
+# TODO
+
+Working backlog for daily updates. Grab the top item in whichever lane matches the day, write it, PR it, check it off.
+
+Suggested cadence:
+
+- **Mon — CVE:** pick one fresh CISA KEV addition and write it up using `vulnerabilities/template.md`.
+- **Tue — Detection:** add one KQL or Sigma rule using a `detections/.../_template.*`.
+- **Wed — Playbook:** publish one playbook from the list below or expand an existing one.
+- **Thu — Threat intel:** add an actor profile, campaign, or TTP roundup.
+- **Fri — Tools / frameworks:** review a tool or deepen a framework page.
+- **Weekend:** cleanup, link-check, update `CHANGELOG.md`.
+
+---
+
+## Playbooks (priority order)
+
+- [ ] Phishing email triage
+- [ ] Ransomware outbreak
+- [ ] Business email compromise (BEC)
+- [ ] Credential theft / password spray
+- [ ] Lateral movement (RDP / SMB / WMI)
+- [ ] Data exfiltration
+- [ ] Insider threat
+- [ ] Malware infection (endpoint)
+- [ ] Cloud account compromise (Entra ID / AWS / GCP)
+- [ ] DDoS
+
+## Detection workflows
+
+- [ ] Phishing email triage
+- [ ] Suspicious sign-in (impossible travel / risky IP)
+- [ ] Beaconing / C2 traffic
+- [ ] LOLBin abuse (rundll32, mshta, regsvr32)
+- [ ] Suspicious scheduled task / service install
+- [ ] Office macro execution
+
+## Detections (KQL / Sigma)
+
+- [ ] T1078.004 — Entra ID risky sign-in followed by mailbox rule creation
+- [ ] T1071.001 — beacon-like outbound HTTPS to rare destination
+- [ ] T1110.003 — password spray against Entra ID / AD
+- [ ] T1486 — mass file rename (ransomware canary)
+- [ ] T1218.011 — rundll32 with unusual command line
+- [ ] T1547.001 — new Run / RunOnce key written by non-installer
+- [ ] T1021.001 — RDP from unusual source
+- [ ] T1003.001 — LSASS access by non-system process
+
+## CVEs to write up
+
+- [ ] Pick from current [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+- [ ] Backfill any CVE referenced in playbooks / detections
+
+## Purple-team labs
+
+- [ ] T1059.001 — Atomic Red Team encoded PowerShell tests vs. the KQL rule
+- [ ] T1078 — valid accounts (Entra ID)
+- [ ] T1021.001 — RDP lateral movement
+- [ ] T1055 — process injection
+- [ ] T1547.001 — run key persistence
+
+## Threat intel
+
+- [ ] First actor profile (pick one currently active group)
+- [ ] First campaign write-up
+- [ ] First TTP roundup
+
+## Repo hygiene
+
+- [ ] Add a top-level `LICENSE` file
+- [ ] Add badges to the root README once CI is green
+- [ ] Add issue templates (`new-cve.md`, `new-detection.md`, `new-playbook.md`)

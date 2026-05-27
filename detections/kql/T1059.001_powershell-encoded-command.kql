@@ -1,0 +1,22 @@
+// Title: PowerShell encoded command execution
+// Technique: T1059.001 - Command and Scripting Interpreter: PowerShell
+// Data source(s): DeviceProcessEvents (Defender XDR)
+// Author: nextlayersec
+// Last updated: 2026-05-27
+//
+// Description:
+//   Surfaces powershell.exe invocations that pass base64-encoded payloads
+//   via -EncodedCommand or inline FromBase64String. Common in living-off-the-land
+//   tradecraft, loaders, and post-exploitation frameworks.
+
+let lookback = 1d;
+let knownAdminHosts = dynamic([]); // add jump boxes / build agents here
+DeviceProcessEvents
+| where Timestamp > ago(lookback)
+| where FileName =~ "powershell.exe" or FileName =~ "pwsh.exe"
+| where ProcessCommandLine has_any ("-enc", "-EncodedCommand", "-ec ", "FromBase64String")
+| where not(DeviceName in~ (knownAdminHosts))
+| extend EncodedBlob = extract(@"(?i)(?:-enc(?:odedcommand)?|-ec)\s+([A-Za-z0-9+/=]{20,})", 1, ProcessCommandLine)
+| project Timestamp, DeviceName, AccountName, InitiatingProcessFileName,
+          InitiatingProcessCommandLine, ProcessCommandLine, EncodedBlob, ReportId
+| sort by Timestamp desc
