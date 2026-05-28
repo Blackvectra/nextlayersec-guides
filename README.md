@@ -44,7 +44,7 @@ This repository provides structured, practical resources to support defensive se
   - [CVE → Framework Mapping Template](vulnerabilities/template.md)
 
 ## Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md) for structure, templates, and CI checks. Open backlog in [TODO.md](TODO.md). Notable changes tracked in [CHANGELOG.md](CHANGELOG.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for structure, templates, and CI checks. Open backlog in [TODO.md](TODO.md). Notable changes tracked in [CHANGELOG.md](CHANGELOG.md). MITRE ATT&CK coverage map: [COVERAGE.md](COVERAGE.md). Security policy: [SECURITY.md](SECURITY.md). Licensed under [MIT](LICENSE).
 
 ---
 

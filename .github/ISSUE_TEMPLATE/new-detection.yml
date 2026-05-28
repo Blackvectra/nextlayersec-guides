@@ -1,0 +1,56 @@
+name: New detection rule
+description: Propose a KQL / Sigma / Splunk / YARA detection.
+title: "Detection: T<id> — <short title>"
+labels: ["content:detection"]
+assignees: ["Blackvectra"]
+body:
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      options:
+        - KQL (Sentinel / Defender XDR)
+        - Sigma (vendor-neutral)
+        - Splunk (SPL)
+        - YARA
+    validations:
+      required: true
+
+  - type: input
+    id: technique
+    attributes:
+      label: MITRE ATT&CK technique
+      placeholder: "T1078.004 — Valid Accounts: Cloud Accounts"
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Behavior to detect
+      description: Plain-English description of what the rule should catch and why it matters.
+    validations:
+      required: true
+
+  - type: textarea
+    id: telemetry
+    attributes:
+      label: Data sources / tables required
+      placeholder: "SigninLogs, IdentityInfo, DeviceProcessEvents, Sysmon EID 1, ..."
+
+  - type: textarea
+    id: fps
+    attributes:
+      label: Known false positives
+      description: What legitimate behavior could trigger this?
+
+  - type: textarea
+    id: draft
+    attributes:
+      label: Draft query (optional)
+      render: kusto
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References

@@ -4,6 +4,16 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (third batch — repo trust + discovery)
+- `LICENSE` — MIT.
+- `SECURITY.md` — private vulnerability reporting policy, scope, SLAs.
+- `.github/dependabot.yml` — weekly GitHub Actions version updates (would have caught the lychee-action advisory automatically).
+- `.github/CODEOWNERS` — auto-request review on every PR.
+- `.github/PULL_REQUEST_TEMPLATE.md` — pre-filled contributor checklist.
+- `.github/ISSUE_TEMPLATE/` — structured forms for new CVEs, detections, playbooks, and tuning requests; private-security and discussions contact links.
+- `COVERAGE.md` — live MITRE ATT&CK coverage matrix with per-tactic counts and a prioritized gap list.
+- Root `README.md` links to license, security policy, and coverage map.
+
 ### Added (second batch)
 - KQL detection: `T1110.003_entra-password-spray` (single IP / many users / failed sign-ins).
 - KQL detection: `T1003.001_lsass-access-suspicious` (non-MS process opens LSASS with dump rights).

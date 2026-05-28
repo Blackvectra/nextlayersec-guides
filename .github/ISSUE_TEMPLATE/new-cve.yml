@@ -1,0 +1,56 @@
+name: New CVE write-up
+description: Request or propose a new entry under vulnerabilities/.
+title: "CVE: <CVE-YYYY-NNNNN> — <short product / impact>"
+labels: ["content:cve"]
+assignees: ["Blackvectra"]
+body:
+  - type: input
+    id: cve
+    attributes:
+      label: CVE ID
+      placeholder: CVE-2026-12345
+    validations:
+      required: true
+
+  - type: input
+    id: product
+    attributes:
+      label: Affected product / version
+      placeholder: "Fortinet FortiOS 7.4.x"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kev
+    attributes:
+      label: Is it in the CISA KEV catalog?
+      options:
+        - "Yes — actively exploited"
+        - "No — but public PoC exists"
+        - "No — pre-disclosure / theoretical"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Why this matters
+      description: 1–3 sentences on impact and who's affected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: detection
+    attributes:
+      label: Detection ideas (optional)
+      description: Telemetry / queries / IOC patterns. If you have a draft KQL/Sigma, link or paste it.
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      placeholder: |
+        - https://nvd.nist.gov/vuln/detail/CVE-...
+        - https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+        - Vendor advisory:

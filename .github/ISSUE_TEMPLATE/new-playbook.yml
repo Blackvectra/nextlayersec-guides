@@ -1,0 +1,40 @@
+name: New playbook or workflow
+description: Propose a new IR playbook (blue-team-playbooks/) or detection workflow (detection-workflows/).
+title: "Playbook: <scenario>"
+labels: ["content:playbook"]
+assignees: ["Blackvectra"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - IR playbook (full scenario, trigger → recovery)
+        - Detection workflow (alert family triage)
+    validations:
+      required: true
+
+  - type: input
+    id: scenario
+    attributes:
+      label: Scenario / alert family
+      placeholder: "Ransomware outbreak | Cloud account compromise | Beaconing traffic"
+    validations:
+      required: true
+
+  - type: textarea
+    id: trigger
+    attributes:
+      label: Trigger
+      description: What alert or signal kicks this off? Link to detection(s) in `detections/`.
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / structure
+      description: Anything specific you want in the triage / containment sections.
+
+  - type: textarea
+    id: related
+    attributes:
+      label: Related detections / CVEs / playbooks
