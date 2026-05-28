@@ -61,9 +61,9 @@ Suggested cadence:
 
 ## Threat intel
 
-- [ ] First actor profile (pick one currently active group)
+- [x] First actor profile — [Scattered Spider](threat-intelligence/actors/scattered-spider.md)
 - [ ] First campaign write-up
-- [ ] First TTP roundup
+- [ ] First TTP roundup (candidates: AiTM phishing kits, OAuth consent phishing, AS-REP roasting, MFA fatigue)
 
 ## Repo hygiene
 

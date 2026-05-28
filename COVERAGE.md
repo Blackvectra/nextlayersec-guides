@@ -24,6 +24,12 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Defense Evasion / Persistence | _various_ | | | [incident-response-suspicious-network](blue-team-playbooks/incident-response-suspicious-network.md) | | |
 | Impact | T1486 Data Encrypted for Impact | | [KQL](detections/kql/T1486_mass-file-rename-ransomware.md) | | | |
 
+## Threat actors profiled
+
+| Actor | File |
+|-------|------|
+| Scattered Spider (UNC3944 / Octo Tempest / Muddled Libra) | [threat-intelligence/actors/scattered-spider.md](threat-intelligence/actors/scattered-spider.md) |
+
 ## Headline coverage by tactic
 
 | Tactic | Detections | Playbooks | Workflows | Labs |

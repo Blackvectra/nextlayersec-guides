@@ -4,6 +4,10 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (fourth batch — first threat-intel content)
+- Actor profile: **Scattered Spider (UNC3944 / Octo Tempest / Muddled Libra)** — TTP table mapped to MITRE ATT&CK, tooling notes, cross-links to the password-spray and LSASS detections already in the repo, and concrete defender guidance (phishing-resistant MFA, help-desk hardening, device registration restrictions, RMM monitoring, PIM, CAE, SaaS specifics).
+- `threat-intelligence/README.md` index updated with the new actor entry.
+
 ### Added (third batch — repo trust + discovery)
 - `LICENSE` — MIT.
 - `SECURITY.md` — private vulnerability reporting policy, scope, SLAs.
