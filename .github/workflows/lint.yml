@@ -16,6 +16,36 @@ jobs:
             **/*.md
             !node_modules
 
+  sigma-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pySigma
+        run: pip install pysigma==1.3.3
+      - name: Validate Sigma rules
+        run: |
+          python - <<'PY'
+          import glob, os, sys
+          from sigma.collection import SigmaCollection
+
+          failed = False
+          for p in sorted(glob.glob("detections/sigma/*.yml")):
+              if os.path.basename(p).startswith("_"):
+                  continue
+              try:
+                  with open(p) as fh:
+                      SigmaCollection.from_yaml(fh.read())
+                  print(f"OK   {p}")
+              except Exception as e:
+                  failed = True
+                  print(f"FAIL {p}: {e}")
+          if failed:
+              sys.exit(1)
+          PY
+
   linkcheck:
     runs-on: ubuntu-latest
     steps:
