@@ -1,0 +1,19 @@
+version: 2
+
+updates:
+  # Keep GitHub Actions versions current — would have caught the
+  # lycheeverse/lychee-action v1 advisory before a human did.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "13:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "ci"
+      include: scope

@@ -1,0 +1,37 @@
+name: Tuning / false-positive report
+description: Report a noisy detection or a missed true positive.
+title: "Tuning: <detection file> — <short symptom>"
+labels: ["tuning"]
+body:
+  - type: input
+    id: rule
+    attributes:
+      label: Rule file
+      placeholder: "detections/kql/T1110.003_entra-password-spray.kql"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of issue
+      options:
+        - False positive (noisy)
+        - False negative (missed true positive)
+        - Schema / field change broke the rule
+        - Performance / query too slow
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Environment, example event(s), what fired vs. what should have. Redact anything sensitive.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed fix (optional)

@@ -61,12 +61,22 @@ Suggested cadence:
 
 ## Threat intel
 
-- [ ] First actor profile (pick one currently active group)
+- [x] First actor profile — [Scattered Spider](threat-intelligence/actors/scattered-spider.md)
 - [ ] First campaign write-up
-- [ ] First TTP roundup
+- [ ] First TTP roundup (candidates: AiTM phishing kits, OAuth consent phishing, AS-REP roasting, MFA fatigue)
 
 ## Repo hygiene
 
-- [ ] Add a top-level `LICENSE` file
+- [x] Add a top-level `LICENSE` file (MIT)
+- [x] Add issue templates (`new-cve`, `new-detection`, `new-playbook`, `tuning-request`)
+- [x] Add PR template
+- [x] Add `SECURITY.md`
+- [x] Add `CODEOWNERS`
+- [x] Add `.github/dependabot.yml`
+- [x] Add MITRE ATT&CK `COVERAGE.md`
 - [ ] Add badges to the root README once CI is green
-- [ ] Add issue templates (`new-cve.md`, `new-detection.md`, `new-playbook.md`)
+- [ ] Add `CODE_OF_CONDUCT.md`
+- [ ] Add Sigma syntax check + YARA syntax check to CI
+- [ ] Add spell check (typos) to CI
+- [ ] Add `detections/DATA_SOURCES.md` mapping rules → required telemetry
+- [ ] Add per-backend "how to deploy" guides (Sentinel analytic rule, Defender custom detection, Splunk savedsearches.conf)

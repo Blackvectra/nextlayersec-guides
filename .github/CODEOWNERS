@@ -1,0 +1,16 @@
+# Default owner — gets review request on every PR.
+*                                @Blackvectra
+
+# Detection content
+/detections/                     @Blackvectra
+/blue-team-playbooks/            @Blackvectra
+/detection-workflows/            @Blackvectra
+/purple-team-labs/               @Blackvectra
+/threat-intelligence/            @Blackvectra
+/vulnerabilities/                @Blackvectra
+
+# CI / repo plumbing
+/.github/                        @Blackvectra
+/CONTRIBUTING.md                 @Blackvectra
+/SECURITY.md                     @Blackvectra
+/LICENSE                         @Blackvectra

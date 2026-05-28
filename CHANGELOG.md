@@ -4,6 +4,20 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (fourth batch — first threat-intel content)
+- Actor profile: **Scattered Spider (UNC3944 / Octo Tempest / Muddled Libra)** — TTP table mapped to MITRE ATT&CK, tooling notes, cross-links to the password-spray and LSASS detections already in the repo, and concrete defender guidance (phishing-resistant MFA, help-desk hardening, device registration restrictions, RMM monitoring, PIM, CAE, SaaS specifics).
+- `threat-intelligence/README.md` index updated with the new actor entry.
+
+### Added (third batch — repo trust + discovery)
+- `LICENSE` — MIT.
+- `SECURITY.md` — private vulnerability reporting policy, scope, SLAs.
+- `.github/dependabot.yml` — weekly GitHub Actions version updates (would have caught the lychee-action advisory automatically).
+- `.github/CODEOWNERS` — auto-request review on every PR.
+- `.github/PULL_REQUEST_TEMPLATE.md` — pre-filled contributor checklist.
+- `.github/ISSUE_TEMPLATE/` — structured forms for new CVEs, detections, playbooks, and tuning requests; private-security and discussions contact links.
+- `COVERAGE.md` — live MITRE ATT&CK coverage matrix with per-tactic counts and a prioritized gap list.
+- Root `README.md` links to license, security policy, and coverage map.
+
 ### Added (second batch)
 - KQL detection: `T1110.003_entra-password-spray` (single IP / many users / failed sign-ins).
 - KQL detection: `T1003.001_lsass-access-suspicious` (non-MS process opens LSASS with dump rights).
@@ -11,6 +25,7 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 - Real playbook: `blue-team-playbooks/phishing-email-triage.md` (trigger → triage → containment → eradication → recovery → lessons learned, with ATT&CK / NIST CSF / ISO 27001 mapping).
 - KQL index in `detections/kql/README.md` updated with all four current rules.
 - TODO checked off the items shipped here.
+- `.github/workflows/daily-reminder.yml` — daily 8 AM CT scheduled workflow that opens a `daily-reminder`-labeled issue with today's TODO lane (CVE / Detection / Playbook / Threat-intel / Tools / Cleanup / Changelog) and assigns it to the maintainer.
 
 ### Fixed
 - Resolved markdownlint failures from PR #2 by relaxing stylistic rules and fixing real issues (double-space `##` heading, trailing blank lines, broken README anchor).

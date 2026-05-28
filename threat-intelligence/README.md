@@ -15,6 +15,16 @@ Use the templates in each subfolder.
 
 ## Index
 
-- _todo: add first actor profile_
+### Actors
+
+| Group | File | Status |
+|-------|------|--------|
+| Scattered Spider (UNC3944 / Octo Tempest / Muddled Libra) | [actors/scattered-spider.md](actors/scattered-spider.md) | published |
+
+### Campaigns
+
 - _todo: add first campaign write-up_
+
+### TTPs
+
 - _todo: add first TTP roundup_
