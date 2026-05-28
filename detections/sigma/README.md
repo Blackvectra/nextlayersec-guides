@@ -4,6 +4,15 @@ Vendor-neutral [Sigma](https://github.com/SigmaHQ/sigma) rules. Convert to your 
 
 Each rule pairs `<name>.yml` with `<name>.md` notes. Use [`_template.yml`](_template.yml) as the starting point.
 
+## Validation
+
+CI validates every non-template rule with pySigma. Run the identical check locally before pushing:
+
+```bash
+pip install "pysigma>=1.3,<2"
+python detections/sigma/validate_rules.py
+```
+
 ## Index
 
 | Technique | File | Status | Description |
