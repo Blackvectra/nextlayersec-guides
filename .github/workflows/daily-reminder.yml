@@ -1,11 +1,11 @@
 name: Daily TODO reminder
 
-# Fires every day at 13:00 UTC = 8:00 AM CDT (US Central, summer)
-# = 7:00 AM CST (US Central, winter). GitHub Actions cron does not
-# auto-adjust for DST; edit this expression if the wintertime shift bothers you.
+# Manual-dispatch only. Auto-schedule was disabled by user request; the cron
+# line below is kept commented so you can flip it back on without rewriting
+# the workflow. 13:00 UTC = 8 AM CDT / 7 AM CST.
 on:
-  schedule:
-    - cron: '0 13 * * *'
+  # schedule:
+  #   - cron: '0 13 * * *'
   workflow_dispatch:
 
 permissions:

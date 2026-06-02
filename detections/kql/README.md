@@ -21,3 +21,4 @@ See [`_template.md`](_template.md) and [`_template.kql`](_template.kql).
 | T1059.001 | [`T1059.001_powershell-encoded-command`](T1059.001_powershell-encoded-command.md) | testing | PowerShell `-EncodedCommand` / `FromBase64String` |
 | T1110.003 | [`T1110.003_entra-password-spray`](T1110.003_entra-password-spray.md) | testing | Single IP fails sign-ins against many Entra users |
 | T1486 | [`T1486_mass-file-rename-ransomware`](T1486_mass-file-rename-ransomware.md) | testing | Process renames many files across directories — ransomware canary |
+| T1547.001 | [`T1547.001_runkey-persistence`](T1547.001_runkey-persistence.md) | testing | Non-installer process writes a Run / RunOnce / Winlogon autostart value |

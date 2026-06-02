@@ -11,9 +11,11 @@ name: Daily draft (Tier 3 — agentic)
 # Fires 13:30 UTC Mon & Tue (just after the reminder). Trigger manually any
 # time via "Run workflow" and optionally force a lane.
 
+# Manual-dispatch only. Auto-schedule was disabled by user request; the cron
+# below is kept commented so you can re-enable it later.
 on:
-  schedule:
-    - cron: '30 13 * * 1,2'
+  # schedule:
+  #   - cron: '30 13 * * 1,2'
   workflow_dispatch:
     inputs:
       lane:

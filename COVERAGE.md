@@ -19,6 +19,7 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Initial Access | T1566.001 Spearphishing Attachment | | | [phishing-email-triage](blue-team-playbooks/phishing-email-triage.md) | | |
 | Initial Access | T1566.002 Spearphishing Link | | | [phishing-email-triage](blue-team-playbooks/phishing-email-triage.md) | | |
 | Execution | T1059.001 PowerShell | | [KQL](detections/kql/T1059.001_powershell-encoded-command.md) · [Sigma](detections/sigma/T1059.001_powershell-encoded-command.md) | | [PowerShell attacks](detection-workflows/detection-workflow-powershell-attacks.md) | |
+| Persistence | T1547.001 Registry Run Keys | | [KQL](detections/kql/T1547.001_runkey-persistence.md) · [Sigma](detections/sigma/T1547.001_runkey-persistence.md) | | | |
 | Credential Access | T1003.001 LSASS Memory | | [KQL](detections/kql/T1003.001_lsass-access-suspicious.md) · [Sigma](detections/sigma/T1003.001_lsass-access-suspicious.md) | | | |
 | Credential Access | T1110.003 Password Spraying | | [KQL](detections/kql/T1110.003_entra-password-spray.md) · [Sigma](detections/sigma/T1110.003_entra-password-spray.md) | | | |
 | Defense Evasion / Persistence | _various_ | | | [incident-response-suspicious-network](blue-team-playbooks/incident-response-suspicious-network.md) | | |
@@ -38,7 +39,7 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Resource Development (TA0042) | 0 | 0 | 0 | 0 |
 | Initial Access (TA0001) | 0 | 1 | 0 | 0 |
 | Execution (TA0002) | 1 | 0 | 1 | 0 |
-| Persistence (TA0003) | 0 | 0 | 0 | 0 |
+| Persistence (TA0003) | 1 | 0 | 0 | 0 |
 | Privilege Escalation (TA0004) | 0 | 0 | 0 | 0 |
 | Defense Evasion (TA0005) | 0 | 0 | 0 | 0 |
 | Credential Access (TA0006) | 2 | 0 | 0 | 0 |
