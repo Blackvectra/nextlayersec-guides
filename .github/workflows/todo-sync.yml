@@ -1,0 +1,60 @@
+name: Auto-sync TODO
+
+# Regenerates the BEGIN AUTO / END AUTO marked sections of TODO.md from
+# what's actually on disk. Runs on push to main (commits the updated file
+# back if it changed) and on every PR as a check (fails if the PR's TODO.md
+# is out of sync with the files in the PR).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'detections/**'
+      - 'blue-team-playbooks/**'
+      - 'detection-workflows/**'
+      - 'vulnerabilities/**'
+      - 'threat-intelligence/**'
+      - 'purple-team-labs/**'
+      - 'scripts/sync-todo.py'
+      - 'TODO.md'
+  pull_request:
+    paths:
+      - 'detections/**'
+      - 'blue-team-playbooks/**'
+      - 'detection-workflows/**'
+      - 'vulnerabilities/**'
+      - 'threat-intelligence/**'
+      - 'purple-team-labs/**'
+      - 'scripts/sync-todo.py'
+      - 'TODO.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check sync (PRs)
+        if: github.event_name == 'pull_request'
+        run: python scripts/sync-todo.py --check
+
+      - name: Sync and commit (pushes to main)
+        if: github.event_name != 'pull_request'
+        run: |
+          python scripts/sync-todo.py
+          if [ -n "$(git status --porcelain TODO.md)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add TODO.md
+            git commit -m "chore: auto-sync TODO.md [skip ci]"
+            git push
+          else
+            echo "TODO.md already in sync."
+          fi

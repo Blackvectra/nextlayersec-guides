@@ -7,7 +7,8 @@ demand from the **Actions** tab via **Run workflow**.
 |----------|------|--------------|------|
 | Issue reminder | `daily-reminder.yml` | Opens a `daily-reminder`-labeled GitHub issue with the day's lane + checklist, assigned to you. | Daily 13:00 UTC |
 | Discord reminder (Tier 2) | `discord-reminder.yml` | Posts the day's focus to Discord. On CVE day it pulls the newest CISA KEV additions not yet in the repo; on detection day it suggests an uncovered ATT&CK technique. | Daily 13:00 UTC |
-| Daily draft (Tier 3) | `daily-draft.yml` | Runs Claude Code headlessly to **draft** the day's CVE (Mon) or detection (Tue), then opens a **draft PR** for you to review. Pings Discord when done. | Mon & Tue 13:30 UTC |
+| **Daily draft (Tier 3, all 7 days)** | `daily-draft.yml` | Runs Claude Code headlessly every day to **draft** the day's lane content (Mon CVE, Tue detection, Wed playbook, Thu threat intel, Fri tools, Sat repo hygiene, Sun weekly review) and open a **draft PR** for review. Pings Discord when done. | Daily 13:30 UTC |
+| TODO auto-sync | `todo-sync.yml` | Regenerates the `BEGIN AUTO`-marked sections of `TODO.md` from what's on disk. Commits the update on pushes to `main`; fails PRs whose TODO is stale. | Push to `main` / PRs touching content / manual |
 
 > Times are UTC. 13:00 UTC = 8:00 AM CDT / 7:00 AM CST. GitHub Actions cron does
 > not auto-adjust for daylight saving — nudge the cron by one hour in winter if
