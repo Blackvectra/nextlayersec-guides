@@ -4,6 +4,13 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (security + Thursday threat-intel batch)
+- **`.github/workflows/scorecard.yml`** — OpenSSF Scorecard analysis on every push to `main` and weekly (Mon 13:23 UTC). Uploads SARIF to GitHub Code-scanning so findings appear under Security → Code scanning alerts, and publishes to the OpenSSF API so a public Scorecard badge can be added once the first run completes.
+- **TTP roundup:** `threat-intelligence/ttps/aitm-phishing-kits.md` — Adversary-in-the-Middle phishing kits (evilginx2 / Modlishka / Tycoon 2FA / Mamba 2FA / NakedPages / Greatness / Caffeine / Storm-1575). Mapped to T1557 / T1606.002 / T1078.004 / T1556.006 / T1539; cross-links to Scattered Spider profile and the password-spray + beaconing detections; full defender playbook from prevention through containment.
+
+### Changed (security)
+- **`crate-ci/typos@master` → `crate-ci/typos@v1`** in `.github/workflows/lint.yml`. Pinning to the major-version tag removes the moving-target supply-chain risk of running whatever the branch tip is on every CI run.
+
 ### Added (hygiene batch)
 - `CODE_OF_CONDUCT.md` — adopts Contributor Covenant 2.1 by reference, with project scope and reporting path.
 - `.github/workflows/lint.yml` gains two new jobs:

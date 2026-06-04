@@ -15,6 +15,13 @@ extend-ignore-re = [
     # Vendor / product names that contain English-looking substrings the
     # spell-checker mis-flags (e.g. MOVEit → "Eit").
     "\\bMOVEit\\b",
+    # Deliberate misspellings used to illustrate attacker typo-squat
+    # domains in phishing / AiTM TTP write-ups. These are not real typos
+    # in our prose, they're examples of how attackers spell things.
+    "\\bmicrosft\\b",
+    "\\bmlcrosoft\\b",
+    "\\boktaa\\b",
+    "\\bgoogie\\b",
     # Windows CLI format-output flag (`schtasks /fo csv`, `wevtutil /fo xml`).
     "(?:^|\\s)/fo\\b",
 ]

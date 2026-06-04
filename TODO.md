@@ -22,7 +22,7 @@ The sync runs:
 | CVE write-ups | 2 |
 | Threat actors profiled | 1 |
 | Threat-intel campaigns | 0 |
-| Threat-intel TTP roundups | 0 |
+| Threat-intel TTP roundups | 1 |
 | Purple-team labs | 0 |
 
 <!-- END AUTO: summary -->
@@ -158,7 +158,7 @@ _No campaign write-ups shipped yet._
 
 <!-- BEGIN AUTO: ttps -->
 
-_No TTP roundups shipped yet._
+- [x] [TTP roundup: Adversary-in-the-Middle (AiTM) phishing kits](threat-intelligence/ttps/aitm-phishing-kits.md)
 
 <!-- END AUTO: ttps -->
 
