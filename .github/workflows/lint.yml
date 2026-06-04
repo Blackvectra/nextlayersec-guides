@@ -92,3 +92,52 @@ jobs:
             --accept 200,206,429
             './**/*.md'
           fail: false
+
+  zizmor:
+    # zizmor is a GitHub Actions YAML linter. Catches:
+    #  - script injection via ${{ }} in `run:` blocks
+    #  - permissions: write-all / overly broad defaults
+    #  - misuse of pull_request_target with checkout of untrusted refs
+    #  - unpinned third-party actions
+    #  - dangerous use of github.event.pull_request.head.* in run blocks
+    # https://woodruffw.github.io/zizmor/
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # upload SARIF
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install zizmor
+        run: pip install "zizmor>=1.0,<2"
+      - name: Run zizmor
+        run: |
+          # Audit-only on the workflow files. Output SARIF for code-scanning
+          # plus plain text in the CI log. We do NOT fail the build on
+          # informational findings yet — once findings are reviewed, switch
+          # to --min-severity=medium or remove --no-error-on-findings.
+          zizmor --format sarif .github/workflows/ > zizmor.sarif || true
+          zizmor --format plain --pedantic --no-online-audits .github/workflows/ || true
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: zizmor.sarif
+          category: zizmor
+
+  dependency-review:
+    # Runs only on PRs — flags newly-introduced vulnerable dependencies
+    # (including in GitHub Actions, since dependency-review@v4 covers them).
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write    # post the summary comment
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/dependency-review-action@v4
+        with:
+          comment-summary-in-pr: on-failure
+          fail-on-severity: high

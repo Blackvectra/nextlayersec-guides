@@ -14,6 +14,12 @@ jobs:
   open-reminder:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
       - uses: actions/checkout@v6
 
       - name: Open today's focus issue

@@ -35,6 +35,18 @@ jobs:
   draft:
     runs-on: ubuntu-latest
     steps:
+      # Egress firewall + audit logging for this runner. We're calling Claude
+      # over the network and pushing branches / opening PRs with write
+      # permissions, so this is the highest-risk workflow in the repo.
+      # Starts in audit mode — promote to `block` after one week of clean
+      # runs once the allowed-endpoints list is finalized.
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+          disable-file-monitoring: false
+
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
