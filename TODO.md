@@ -39,12 +39,13 @@ Suggested cadence:
 
 - [ ] T1078.004 — Entra ID risky sign-in followed by mailbox rule creation
 - [ ] T1071.001 — beacon-like outbound HTTPS to rare destination
-- [x] T1110.003 — password spray against Entra ID / AD — [`detections/kql/T1110.003_entra-password-spray.kql`](detections/kql/T1110.003_entra-password-spray.md)
-- [x] T1486 — mass file rename (ransomware canary) — [`detections/kql/T1486_mass-file-rename-ransomware.kql`](detections/kql/T1486_mass-file-rename-ransomware.md)
+- [x] T1110.003 — password spray against Entra ID / AD — [KQL](detections/kql/T1110.003_entra-password-spray.md) · [Sigma](detections/sigma/T1110.003_entra-password-spray.md)
+- [x] T1486 — mass file rename (ransomware canary) — [KQL](detections/kql/T1486_mass-file-rename-ransomware.md) · [Sigma](detections/sigma/T1486_mass-file-rename-ransomware.md)
 - [ ] T1218.011 — rundll32 with unusual command line
 - [ ] T1547.001 — new Run / RunOnce key written by non-installer
 - [ ] T1021.001 — RDP from unusual source
-- [x] T1003.001 — LSASS access by non-system process — [`detections/kql/T1003.001_lsass-access-suspicious.kql`](detections/kql/T1003.001_lsass-access-suspicious.md)
+- [x] T1003.001 — LSASS access by non-system process — [KQL](detections/kql/T1003.001_lsass-access-suspicious.md) · [Sigma](detections/sigma/T1003.001_lsass-access-suspicious.md)
+- [x] Port the four existing KQL detections to Sigma — `detections/sigma/` (T1059.001, T1003.001, T1110.003, T1486)
 
 ## CVEs to write up
 
@@ -76,7 +77,7 @@ Suggested cadence:
 - [x] Add MITRE ATT&CK `COVERAGE.md`
 - [ ] Add badges to the root README once CI is green
 - [ ] Add `CODE_OF_CONDUCT.md`
-- [ ] Add Sigma syntax check + YARA syntax check to CI
+- [ ] Add Sigma syntax check + YARA syntax check to CI — [x] Sigma (`sigma-validate` job via pysigma); [ ] YARA
 - [ ] Add spell check (typos) to CI
-- [ ] Add `detections/DATA_SOURCES.md` mapping rules → required telemetry
+- [x] Add `detections/DATA_SOURCES.md` mapping rules → required telemetry — [`detections/DATA_SOURCES.md`](detections/DATA_SOURCES.md)
 - [ ] Add per-backend "how to deploy" guides (Sentinel analytic rule, Defender custom detection, Splunk savedsearches.conf)

@@ -1,0 +1,57 @@
+title: Mass File Rename — Ransomware Encryption Canary (base)
+name: file_rename_event
+id: f1f8ee08-e62c-4d2b-bd0a-089aa8105584
+status: experimental
+description: >-
+  Base rule that matches file rename events (Sysmon EID 11/23 rename semantics).
+  On its own this is benign and high-volume; it feeds the mass-rename
+  correlation rule below.
+author: nextlayersec
+date: 2026/05/28
+references:
+  - https://attack.mitre.org/techniques/T1486/
+  - https://github.com/nextlayersec/nextlayersec-guides/blob/main/detections/kql/T1486_mass-file-rename-ransomware.md
+tags:
+  - attack.impact
+  - attack.t1486
+logsource:
+  product: windows
+  category: file_event
+detection:
+  selection:
+    EventType: Rename
+  condition: selection
+falsepositives:
+  - Bulk migration or cleanup scripts run by IT
+  - Backup or DLP agents performing scheduled transformations
+level: critical
+---
+title: Mass File Rename — Ransomware Encryption Canary
+id: 68028423-2839-4d32-9810-3c5e6a6be2fa
+status: experimental
+description: >-
+  Fires when a single process renames fifty or more files on one host within a
+  15-minute window — the canonical ransomware encryption pattern (everything
+  turning into .locked, .crypt, or a per-victim suffix).
+author: nextlayersec
+date: 2026/05/28
+references:
+  - https://attack.mitre.org/techniques/T1486/
+  - https://github.com/nextlayersec/nextlayersec-guides/blob/main/detections/kql/T1486_mass-file-rename-ransomware.md
+tags:
+  - attack.impact
+  - attack.t1486
+correlation:
+  type: event_count
+  rules:
+    - file_rename_event
+  group-by:
+    - Image
+    - Computer
+  timespan: 15m
+  condition:
+    gte: 50
+falsepositives:
+  - Photo or media library reorganization tools
+  - Add the legitimate process to a per-host or per-user allowlist
+level: critical

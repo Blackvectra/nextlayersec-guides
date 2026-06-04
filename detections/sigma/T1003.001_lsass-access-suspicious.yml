@@ -1,0 +1,49 @@
+title: Suspicious LSASS Process Access
+id: 9e091130-6da7-4b49-af23-53770817a118
+status: experimental
+description: >-
+  Detects non-Microsoft, non-EDR processes opening a handle to lsass.exe with
+  access rights that enable memory reading or full process control — the
+  precondition for credential dumping (Mimikatz, ProcDump abuse, comsvcs.dll
+  MiniDump, direct syscall variants).
+author: nextlayersec
+date: 2026/05/28
+references:
+  - https://attack.mitre.org/techniques/T1003/001/
+  - https://github.com/nextlayersec/nextlayersec-guides/blob/main/detections/kql/T1003.001_lsass-access-suspicious.md
+tags:
+  - attack.credential_access
+  - attack.t1003.001
+logsource:
+  product: windows
+  category: process_access
+detection:
+  selection:
+    TargetImage|endswith: '\lsass.exe'
+    GrantedAccess:
+      - '0x1010'
+      - '0x1410'
+      - '0x1438'
+      - '0x143A'
+      - '0x1FFFFF'
+  filter_known:
+    SourceImage|endswith:
+      - '\MsMpEng.exe'
+      - '\MsSense.exe'
+      - '\SenseIR.exe'
+      - '\SenseNdr.exe'
+      - '\SenseCncProxy.exe'
+      - '\CSFalconService.exe'
+      - '\CSFalconContainer.exe'
+      - '\SentinelAgent.exe'
+      - '\SentinelServiceHost.exe'
+      - '\cb.exe'
+      - '\RepMgr.exe'
+      - '\wininit.exe'
+      - '\svchost.exe'
+  condition: selection and not filter_known
+falsepositives:
+  - Endpoint protection products (CrowdStrike, SentinelOne, Carbon Black) — add their signer or image name to the filter
+  - Backup and DLP agents that snapshot process memory
+  - Microsoft Process Explorer when run by admins for support
+level: high

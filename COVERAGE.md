@@ -18,11 +18,11 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Initial Access | T1566 Phishing | — | | [phishing-email-triage](blue-team-playbooks/phishing-email-triage.md) | | |
 | Initial Access | T1566.001 Spearphishing Attachment | | | [phishing-email-triage](blue-team-playbooks/phishing-email-triage.md) | | |
 | Initial Access | T1566.002 Spearphishing Link | | | [phishing-email-triage](blue-team-playbooks/phishing-email-triage.md) | | |
-| Execution | T1059.001 PowerShell | | [KQL](detections/kql/T1059.001_powershell-encoded-command.md) | | [PowerShell attacks](detection-workflows/detection-workflow-powershell-attacks.md) | |
-| Credential Access | T1003.001 LSASS Memory | | [KQL](detections/kql/T1003.001_lsass-access-suspicious.md) | | | |
-| Credential Access | T1110.003 Password Spraying | | [KQL](detections/kql/T1110.003_entra-password-spray.md) | | | |
+| Execution | T1059.001 PowerShell | | [KQL](detections/kql/T1059.001_powershell-encoded-command.md) · [Sigma](detections/sigma/T1059.001_powershell-encoded-command.md) | | [PowerShell attacks](detection-workflows/detection-workflow-powershell-attacks.md) | |
+| Credential Access | T1003.001 LSASS Memory | | [KQL](detections/kql/T1003.001_lsass-access-suspicious.md) · [Sigma](detections/sigma/T1003.001_lsass-access-suspicious.md) | | | |
+| Credential Access | T1110.003 Password Spraying | | [KQL](detections/kql/T1110.003_entra-password-spray.md) · [Sigma](detections/sigma/T1110.003_entra-password-spray.md) | | | |
 | Defense Evasion / Persistence | _various_ | | | [incident-response-suspicious-network](blue-team-playbooks/incident-response-suspicious-network.md) | | |
-| Impact | T1486 Data Encrypted for Impact | | [KQL](detections/kql/T1486_mass-file-rename-ransomware.md) | | | |
+| Impact | T1486 Data Encrypted for Impact | | [KQL](detections/kql/T1486_mass-file-rename-ransomware.md) · [Sigma](detections/sigma/T1486_mass-file-rename-ransomware.md) | | | |
 
 ## Threat actors profiled
 
