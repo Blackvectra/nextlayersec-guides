@@ -94,7 +94,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 25 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          claude_args: "--max-turns 50 --model claude-sonnet-4-6 --permission-mode bypassPermissions"
           prompt: |
             Draft a new CVE write-up.
             1. curl https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
@@ -133,7 +133,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 30 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          claude_args: "--max-turns 50 --model claude-sonnet-4-6 --permission-mode bypassPermissions"
           prompt: |
             Draft a new detection (KQL + Sigma) for an uncovered ATT&CK technique.
             1. Read COVERAGE.md and TODO.md's "Detection backlog (manual)" section. Pick the highest-priority technique that does NOT already have a file in detections/kql/.
@@ -149,7 +149,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 30 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          claude_args: "--max-turns 50 --model claude-sonnet-4-6 --permission-mode bypassPermissions"
           prompt: |
             Draft a new IR playbook from TODO.md's "Playbooks → Backlog (manual)" list. Pick the top untouched one (start with Ransomware outbreak unless already shipped).
             1. Author blue-team-playbooks/<scenario>.md using blue-team-playbooks/_template.md as structure (trigger / scope / triage / containment / eradication / recovery / lessons learned / framework mapping / references).
@@ -163,7 +163,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 30 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          claude_args: "--max-turns 50 --model claude-sonnet-4-6 --permission-mode bypassPermissions"
           prompt: |
             Draft a threat-intel note. Decide which sub-area is least covered (actors / campaigns / ttps) by inspecting threat-intelligence/. Default order if all equal: TTP roundup first (AiTM phishing kits, OAuth consent phishing, AS-REP roasting, MFA fatigue), then a second actor profile (Lazarus, FIN7, Konni), then a campaign.
             1. Use the matching _template.md in threat-intelligence/<area>/.
@@ -178,7 +178,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 20 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          claude_args: "--max-turns 50 --model claude-sonnet-4-6 --permission-mode bypassPermissions"
           prompt: |
             Improve tools/blue-team-tools.md OR one frameworks/*.md page.
             Strategy: pick whichever has the smallest "next concrete improvement". Either add 3–6 new high-quality tool entries with brief one-line descriptions and links, or deepen a framework page with a "How to use in a SOC" subsection.
@@ -191,7 +191,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 20 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          claude_args: "--max-turns 50 --model claude-sonnet-4-6 --permission-mode bypassPermissions"
           prompt: |
             Repo-hygiene day. Look at TODO.md "Repo hygiene & infrastructure (manual)" and pick the top unchecked item that's small. Examples in order:
               - Add `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1).
@@ -209,7 +209,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 20 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          claude_args: "--max-turns 50 --model claude-sonnet-4-6 --permission-mode bypassPermissions"
           prompt: |
             Weekly review.
             1. Look at merged PRs from the last 7 days (use git log --since="7 days ago" --merges and git log --since="7 days ago" --oneline).
@@ -275,7 +275,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 15 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          claude_args: "--max-turns 15 --model claude-sonnet-4-6 --permission-mode bypassPermissions"
           prompt: |
             ROLE: skeptical security-content reviewer. Your job is to refute,
             not assist. Default to FAIL when uncertain. This is the last gate
