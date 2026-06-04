@@ -1,0 +1,102 @@
+title: Entra Risky Sign-in followed by Mailbox-Rule Creation (post-AiTM, base)
+name: entra_risky_successful_signin
+id: 4e3a170a-f7e2-4473-951e-cad6c27d7340
+status: experimental
+description: >-
+  Base rule for successful Entra ID sign-ins flagged as risky during sign-in
+  or aggregated risk. Feeds the temporal correlation rule below that catches
+  the canonical AiTM post-takeover mailbox-rule mutation. On its own this is
+  noisy; pair it with `entra_inbox_rule_mutation` via the correlation block.
+author: nextlayersec
+date: 2026/06/04
+references:
+  - https://attack.mitre.org/techniques/T1078/004/
+  - https://github.com/nextlayersec/nextlayersec-guides/blob/main/detections/kql/T1078.004_risky-signin-mailbox-rule.md
+  - https://github.com/nextlayersec/nextlayersec-guides/blob/main/threat-intelligence/ttps/aitm-phishing-kits.md
+tags:
+  - attack.initial_access
+  - attack.t1078.004
+logsource:
+  product: azure
+  service: signinlogs
+detection:
+  selection:
+    ResultType: 0
+  risky:
+    - RiskLevelDuringSignIn:
+        - medium
+        - high
+    - RiskLevelAggregated:
+        - medium
+        - high
+  condition: selection and risky
+falsepositives:
+  - Power users hitting risk thresholds from frequent travel
+  - VPN egress that puts the sign-in IP in an "unfamiliar" reputation bucket
+level: medium
+---
+title: Entra Inbox-rule Mutation (base)
+name: entra_inbox_rule_mutation
+id: 2c8f5be0-2eaf-4e1b-9b4f-9d40a9d3bfa5
+status: experimental
+description: >-
+  Base rule for Exchange Online inbox-rule creates / updates / enables.
+  Feeds the AiTM correlation; on its own this fires on every legitimate
+  rule change.
+author: nextlayersec
+date: 2026/06/04
+references:
+  - https://attack.mitre.org/techniques/T1564/008/
+  - https://github.com/nextlayersec/nextlayersec-guides/blob/main/detections/kql/T1078.004_risky-signin-mailbox-rule.md
+tags:
+  - attack.defense_evasion
+  - attack.t1564.008
+logsource:
+  product: m365
+  service: exchange
+detection:
+  selection:
+    Operation:
+      - New-InboxRule
+      - Set-InboxRule
+      - UpdateInboxRules
+      - Enable-InboxRule
+  condition: selection
+falsepositives:
+  - User-initiated organization rules
+  - Onboarding automation that templates inbox rules at first sign-in
+level: low
+---
+title: Risky Entra sign-in followed by mailbox-rule mutation (post-AiTM)
+id: 8df1d8b9-6f88-49b4-a52d-5d9b5e2c0a17
+status: experimental
+description: >-
+  Fires when the same UPN appears in both a risky successful Entra sign-in
+  and an inbox-rule mutation within a 10-minute window — the highest-fidelity
+  post-AiTM cookie-replay signal. Manual correlation in this Sigma file is a
+  temporal_count over the two base rules grouped by UPN.
+author: nextlayersec
+date: 2026/06/04
+references:
+  - https://attack.mitre.org/techniques/T1078/004/
+  - https://attack.mitre.org/techniques/T1564/008/
+  - https://github.com/nextlayersec/nextlayersec-guides/blob/main/detections/kql/T1078.004_risky-signin-mailbox-rule.md
+  - https://github.com/nextlayersec/nextlayersec-guides/blob/main/threat-intelligence/ttps/aitm-phishing-kits.md
+tags:
+  - attack.initial_access
+  - attack.t1078.004
+  - attack.defense_evasion
+  - attack.t1564.008
+correlation:
+  type: temporal
+  rules:
+    - entra_risky_successful_signin
+    - entra_inbox_rule_mutation
+  group-by:
+    - UserPrincipalName
+  timespan: 10m
+  ordered: true
+falsepositives:
+  - Power users restructuring folders right after a risky-rated travel sign-in
+  - Service accounts owned by managed-mailbox tooling
+level: high

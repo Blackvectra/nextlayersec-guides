@@ -1,0 +1,118 @@
+name: Discord TODO updates
+
+# Fires on every push to main that touches TODO.md. Diffs the change,
+# extracts newly-ticked / newly-added / newly-removed items, and posts
+# a Discord embed so you see TODO movement in your channel without
+# opening the repo.
+#
+# Combines with the existing daily Discord lane reminder and the
+# Tier-3 agentic drafter to give a complete progress feed.
+#
+# Requires repo secret: DISCORD_WEBHOOK_URL (same secret as the other
+# Discord workflows). If absent the workflow logs a warning and exits 0.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'TODO.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - uses: actions/checkout@v6
+        with:
+          # Need the previous commit on main so we can diff TODO.md.
+          fetch-depth: 2
+
+      - name: Diff TODO.md and post to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
+            echo "::warning::DISCORD_WEBHOOK_URL not set — skipping Discord post."
+            exit 0
+          fi
+
+          # Compare HEAD against the previous commit. On the very first push
+          # there's no previous commit; in that case treat everything as new.
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            PREV=HEAD^
+          else
+            # Empty tree — every line is "added".
+            PREV=$(git hash-object -t tree --stdin </dev/null)
+          fi
+
+          # Lines added with `- [x]` (newly checked) and `- [ ]` (newly added).
+          # We intentionally strip the leading `+` and re-add a bullet for
+          # readability in the embed.
+          TICKED=$(git diff "$PREV" HEAD -- TODO.md \
+              | awk '/^\+- \[x\]/ {sub(/^\+- \[x\] /, "- "); print}' \
+              | head -10)
+
+          UNTICKED=$(git diff "$PREV" HEAD -- TODO.md \
+              | awk '/^-- \[x\]/ {sub(/^-- \[x\] /, "- "); print}' \
+              | head -10)
+
+          NEW_OPEN=$(git diff "$PREV" HEAD -- TODO.md \
+              | awk '/^\+- \[ \]/ {sub(/^\+- \[ \] /, "- "); print}' \
+              | head -10)
+
+          # If nothing actionable changed (e.g. only whitespace / auto-sync
+          # of counts), don't spam the channel.
+          if [ -z "$TICKED" ] && [ -z "$UNTICKED" ] && [ -z "$NEW_OPEN" ]; then
+            echo "No actionable TODO changes — skipping Discord post."
+            exit 0
+          fi
+
+          # Build a snapshot of current overall progress: how many - [x] vs - [ ].
+          DONE=$(grep -cE '^- \[x\]' TODO.md || true)
+          OPEN=$(grep -cE '^- \[ \]' TODO.md || true)
+          TOTAL=$(( DONE + OPEN ))
+          if [ "$TOTAL" -gt 0 ]; then
+            PCT=$(( (DONE * 100) / TOTAL ))
+          else
+            PCT=0
+          fi
+
+          BODY=""
+          if [ -n "$TICKED" ]; then
+            BODY="${BODY}**✅ Newly ticked**\\n${TICKED}\\n\\n"
+          fi
+          if [ -n "$NEW_OPEN" ]; then
+            BODY="${BODY}**🆕 Newly added**\\n${NEW_OPEN}\\n\\n"
+          fi
+          if [ -n "$UNTICKED" ]; then
+            BODY="${BODY}**↩️ Re-opened / removed**\\n${UNTICKED}\\n\\n"
+          fi
+          BODY="${BODY}_Overall progress: **${DONE}/${TOTAL}** items done (${PCT}%)_"
+
+          PAYLOAD=$(jq -n \
+            --arg title  "TODO updated — $(date -u +%Y-%m-%d)" \
+            --arg desc   "$(printf '%b' "$BODY")" \
+            --arg url    "https://github.com/${REPO}/blob/main/TODO.md" \
+            --arg footer "commit $(echo $COMMIT_SHA | cut -c1-7) · NextLayerSec" \
+            --argjson color 3066993 \
+            '{username: "NextLayerSec",
+              embeds: [{title: $title, description: $desc, url: $url,
+                        color: $color, footer: {text: $footer}}]}')
+
+          curl -fsSL --max-time 30 -X POST \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"
+          echo "Posted TODO update to Discord."
