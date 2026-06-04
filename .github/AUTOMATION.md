@@ -37,15 +37,15 @@ rather than failing — so you can enable Tier 2 today and add Tier 3 later.
 ## Cost & safety notes
 
 - **Tier 2 is free** — it only calls public feeds and the Discord webhook.
-- **Tier 3 costs a small amount per run** (one Claude Code session on
-  `claude-sonnet-4-6`, capped at `--max-turns 25`). It only runs twice a week on
-  schedule.
-- Tier 3 **never merges anything** — it opens *draft* PRs. The prompts instruct
-  Claude to mark unverified facts as "TBD — verify" and to list them in the PR
-  body, so you always review before merge.
-- GitHub security policy: PRs opened by the Actions bot do **not** automatically
-  trigger the `lint.yml` checks. Either push an empty commit, or close/reopen the
-  PR, to kick CI on a Tier 3 draft.
+- **Tier 3 costs a small amount per run** (one Claude Code drafter + one fact-checker on `claude-sonnet-4-6`, capped). Fires daily.
+- **Auto-merge with fact-check gate.** After each lane drafts a PR, two more steps run inside the same workflow:
+  1. **Regex precheck** — rejects on any `TBD — verify`, `FIXME`, `XXX`, or `????` marker in the diff.
+  2. **Adversarial Claude fact-check** — independent skeptic-role review. Verifies CVE IDs against KEV, MITRE technique IDs, KQL/Sigma syntax, cross-references, and that factual claims have citations. Writes its verdict to `/tmp/fact-check-verdict.txt`.
+  3. If both pass, the PR is marked ready and **GitHub native auto-merge** is enabled (`--auto --squash --delete-branch`). The merge only happens once every required CI check (`markdownlint`, `linkcheck`, `sigma-validate`, `todo-sync`) passes.
+  4. If either fails, the PR stays a draft, gets a `needs-review` label, and a comment with the failure reasons is posted.
+- **Kill switch.** Set repo variable `AUTO_MERGE_ENABLED=false` (Settings → Secrets and variables → Actions → Variables) to keep the fact-check running but skip the auto-merge step. PR is marked ready; you merge manually.
+- **Branch protection recommended.** For the strongest gate, add a branch-protection rule on `main` requiring `markdownlint`, `linkcheck`, `sigma-validate`, and `todo-sync` as required status checks. Without that, auto-merge respects only GitHub's default checks.
+- GitHub security policy: PRs opened by the Actions bot do **not** automatically trigger downstream workflows that fire on `pull_request` events. The fact-check + auto-merge run **inside the same workflow run** as the drafter, so this doesn't matter for the auto-merge path. The lint workflow itself triggers on `push`, so it does run.
 
 ## Tuning
 
