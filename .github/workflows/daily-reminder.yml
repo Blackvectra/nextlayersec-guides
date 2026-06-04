@@ -89,8 +89,8 @@ jobs:
               },
               Sun: {
                 lane: 'Changelog & review',
-                focus: 'Update `CHANGELOG.md` with the week\\'s additions; plan next week.',
-                hint:  'Look at this week\\'s merged PRs, add bullets to the `[Unreleased]` section, and re-prioritize `TODO.md`.',
+                focus: "Update `CHANGELOG.md` with the week's additions; plan next week.",
+                hint:  "Look at this week's merged PRs, add bullets to the `[Unreleased]` section, and re-prioritize `TODO.md`.",
                 links: [
                   ['CHANGELOG.md', 'CHANGELOG.md'],
                   ['TODO.md', 'TODO.md']
