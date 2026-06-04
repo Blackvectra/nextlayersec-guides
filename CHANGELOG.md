@@ -4,6 +4,14 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (hygiene batch)
+- `CODE_OF_CONDUCT.md` — adopts Contributor Covenant 2.1 by reference, with project scope and reporting path.
+- `.github/workflows/lint.yml` gains two new jobs:
+  - `yara-validate` — installs `yara` and validates every `.yar` / `.yara` rule in `detections/yara/`, including templates (parse-only).
+  - `typos` — runs `crate-ci/typos` against the whole repo with a project config.
+- `.typos.toml` — spell-check config with sensible ignore rules for security content (hex / base64 / hashes / CVE IDs / KB IDs / MITRE technique IDs / Sigma UUIDs) and excludes for query files (`*.kql`, `*.spl`, `*.yar*`) and the auto-generated `TODO.md`.
+- Root `README.md` now sports CI / license / Code-of-Conduct / last-commit badges across the top.
+
 ### Changed (consolidation)
 - All in-flight work consolidated onto a single branch and PR. The actions/checkout bump from Dependabot PR #6 was rolled in (v4 → v6 across `discord-reminder`, `lint`, `todo-sync`, `daily-reminder`, `daily-draft`; `codeql.yml` left untouched as GitHub-managed default setup).
 - CVE-selection priority list expanded: added **SonicWall** to the network/identity-gear bucket, plus a new dedicated bucket for **popular third-party endpoint software on Windows fleets** (Google Chrome, Microsoft Edge, Firefox, Adobe Reader/Acrobat, 7-Zip, WinRAR, Notepad++, Zoom, Slack, Java/OpenJDK, .NET runtime). Updated `vulnerabilities/README.md`, `CONTRIBUTING.md`, and the Mon CVE prompt in `daily-draft.yml`.
