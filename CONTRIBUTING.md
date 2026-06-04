@@ -22,6 +22,17 @@ Thanks for adding to NextLayerSec Guides. The repo is opinionated about structur
 | Purple-team lab | `purple-team-labs/<name>/` | `purple-team-labs/_template/` |
 | Threat actor / campaign / TTP | `threat-intelligence/{actors,campaigns,ttps}/<name>.md` | `threat-intelligence/.../_template.md` |
 
+## Content selection — CVEs
+
+This repo targets Windows-heavy SOC / MSP environments. When picking a CVE to write up, prefer (in order):
+
+1. Microsoft Windows ecosystem (Windows client/server, AD, Entra ID, Exchange, SharePoint, Office / M365, Defender, Intune).
+2. Edge / identity / virtualization gear deployed alongside Windows fleets (Fortinet, Cisco, Palo Alto, Citrix, Ivanti, VMware, F5, Atlassian, MOVEit, ConnectWise, Veeam, Kaseya, SolarWinds).
+3. Anything with a public PoC or in-the-wild exploitation — especially CISA KEV catalog additions.
+4. Other only if 1–3 have nothing fresh.
+
+The auto-drafter in `.github/workflows/daily-draft.yml` follows this priority for its Monday lane. See `vulnerabilities/README.md` for the full criteria.
+
 ## Style
 
 - Markdown only (no HTML unless necessary).

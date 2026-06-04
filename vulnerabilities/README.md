@@ -1,12 +1,15 @@
 # Vulnerabilities
 
-Selective CVE library. Quality over quantity — prioritize:
+Selective CVE library. Quality over quantity. Selection priority (top is most relevant to this repo's target environment — Windows-heavy MSP / SOC fleets):
 
-1. **CISA KEV catalog** additions (actively exploited).
-2. CVEs in commonly-deployed SOC scope: Fortinet, Cisco, Palo Alto, Microsoft Exchange / Sharepoint / Windows, Citrix, Ivanti, VMware, Atlassian, MOVEit, etc.
-3. Anything with a **public PoC** or in-the-wild exploitation.
+1. **Microsoft Windows ecosystem** — Windows client/server, Active Directory, Entra ID, Exchange, SharePoint, Office / M365, Defender, Intune, Windows Server roles.
+2. **Edge / identity / virtualization gear deployed alongside Windows fleets** — Fortinet, Cisco ASA / IOS XE / Firepower, Palo Alto PAN-OS, Citrix ADC / NetScaler, Ivanti Connect Secure / EPM, VMware vCenter / ESXi, F5 BIG-IP, Atlassian, MOVEit, ConnectWise, Veeam, Kaseya, SolarWinds.
+3. **Anything with a public PoC or in-the-wild exploitation**, especially CISA KEV catalog additions.
+4. Other CVEs only when 1–3 have nothing fresh.
 
-Each entry should include impact, detection guidance (link to a `detections/` rule when possible), mitigation, and framework mapping.
+Within those buckets, prefer CISA KEV entries, then anything actively exploited per vendor or government advisory.
+
+Each entry must include impact, detection guidance (link to a `detections/` rule when possible), mitigation, framework mapping, and primary-source citations.
 
 ## Index
 

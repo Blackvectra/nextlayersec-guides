@@ -82,11 +82,31 @@ jobs:
           prompt: |
             Draft a new CVE write-up.
             1. curl https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
-            2. Pick the most recently added CVE that does NOT already have a file in vulnerabilities/.
-            3. Create vulnerabilities/CVE-YYYY-NNNNN.md following vulnerabilities/template.md (summary, impact, remediation, framework mapping, detection guidance, references). Only public facts; mark unverified as "TBD — verify".
-            4. Run python scripts/sync-todo.py (it will tick the CVE section automatically).
+            2. Pick the most recently added CVE that does NOT already have a file
+               in vulnerabilities/ AND that prioritizes the maintainer's daily
+               operating environment, in this preference order:
+                 a. Microsoft Windows (client / server), Active Directory,
+                    Entra ID, Exchange, SharePoint, Office / M365, Defender,
+                    Intune, Windows Server roles (DNS, IIS, RDS).
+                 b. Common edge / identity / virtualization gear deployed
+                    alongside Windows fleets in MSP environments: Fortinet,
+                    Cisco ASA / IOS XE / Firepower, Palo Alto PAN-OS, Citrix
+                    ADC / NetScaler, Ivanti Connect Secure / EPM, VMware
+                    vCenter / ESXi, F5 BIG-IP, Atlassian, MOVEit, ConnectWise,
+                    Veeam, Kaseya, SolarWinds.
+                 c. Other CVEs only if no a / b candidates are available in
+                    the most recent ~20 KEV additions.
+               If a top-priority candidate exists, choose it even if it's not
+               the absolute newest entry.
+            3. Create vulnerabilities/CVE-YYYY-NNNNN.md following
+               vulnerabilities/template.md (summary, impact, remediation,
+               framework mapping, detection guidance, references). Only public
+               facts; mark unverified as "TBD — verify".
+            4. Run python scripts/sync-todo.py (it will tick the CVE section).
             5. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
-            6. Branch auto/cve-<cveid>; commit; open a DRAFT PR titled "Draft: CVE write-up <CVE-ID>". In the body list every "TBD — verify" field for me to check.
+            6. Branch auto/cve-<cveid>; commit; open a DRAFT PR titled
+               "Draft: CVE write-up <CVE-ID>". In the body list every
+               "TBD — verify" field for me to check.
 
       - name: Lane — Tuesday Detection
         if: steps.prep.outputs.lane == 'detection'
