@@ -23,8 +23,12 @@ Use the templates in each subfolder.
 
 ### Campaigns
 
-- _todo: add first campaign write-up_
+| Campaign | File | Period | Actor | Status |
+|----------|------|--------|-------|--------|
+| Scattered Spider — 2023 Hospitality Sector Breaches | [campaigns/scattered-spider-casino-2023.md](campaigns/scattered-spider-casino-2023.md) | 2023-05 – 2023-12 | Scattered Spider / UNC3944 | published |
 
 ### TTPs
 
-- _todo: add first TTP roundup_
+| Roundup | File | Status |
+|---------|------|--------|
+| Adversary-in-the-Middle (AiTM) phishing kits | [ttps/aitm-phishing-kits.md](ttps/aitm-phishing-kits.md) | published |
