@@ -4,6 +4,13 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (content + Discord-TODO-notify batch)
+- **Detection: T1078.004 — Risky Entra sign-in followed by mailbox-rule mutation** (KQL + Sigma). Highest-fidelity post-AiTM cookie-replay signal. Cross-source join on `SigninLogs` + `OfficeActivity` over a 10-minute window. The Sigma version uses a multi-doc `temporal` correlation across `entra_risky_successful_signin` and `entra_inbox_rule_mutation`. Closes the top item in 🔥 Next up and the direct follow-on detection called out by the AiTM phishing-kits TTP roundup.
+- **`.github/workflows/discord-todo-update.yml`** — fires on pushes to `main` that touch `TODO.md`, diffs newly-ticked / newly-added / re-opened items, and posts a single Discord embed with overall progress (`X/Y items done · NN%`). Uses the same `DISCORD_WEBHOOK_URL` secret as the existing daily reminders; warns and exits 0 if unset. Skips silently when only whitespace / auto-counts changed.
+
+### Coverage
+- `COVERAGE.md` updates: Initial Access detection count `0 → 1`; T1078.004 row added in the per-technique table.
+
 ### Added (security hardening batch)
 - **`zizmor` CI job** in `.github/workflows/lint.yml` — purpose-built GitHub Actions YAML linter. Catches script injection via `${{ }}` in `run:` blocks, `permissions: write-all` defaults, `pull_request_target` misuse, and unpinned third-party Actions. Uploads SARIF to GitHub code-scanning (`Security → Code scanning alerts`). Runs in audit mode initially (`--no-error-on-findings`) so existing findings can be triaged before CI hard-fails.
 - **`dependency-review` CI job** in `.github/workflows/lint.yml` — flags vulnerable Actions / dependencies introduced in PRs, posts a summary comment on failure, fails the PR on `high`-severity issues.

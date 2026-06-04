@@ -1,0 +1,65 @@
+// Title: Entra ID risky sign-in followed by mailbox-rule creation
+// Technique: T1078.004 - Valid Accounts: Cloud Accounts (post-AiTM)
+// Related: T1564.008 - Email Hiding Rules; T1098.005 - Account Manipulation
+// Data source(s): SigninLogs (Entra ID) + OfficeActivity (Exchange UAL) — Sentinel
+// Author: nextlayersec
+// Last updated: 2026-06-04
+//
+// Description:
+//   Highest-fidelity post-AiTM-phish detection. After an attacker rides a
+//   stolen session cookie into Microsoft 365, the first move is almost
+//   always to create an inbox rule that hides replies from the user (so
+//   the victim doesn't notice the wire-fraud / consent-grant emails the
+//   attacker is sending). This rule joins a risky-but-successful Entra
+//   sign-in to a New-InboxRule / Set-InboxRule / UpdateInboxRules event
+//   from the same user within 10 minutes.
+//
+//   Pair with the AiTM phishing-kit TTP write-up at:
+//     threat-intelligence/ttps/aitm-phishing-kits.md
+
+let lookback = 1d;
+let pairWindow = 10m;
+let RiskySignins =
+    SigninLogs
+    | where TimeGenerated > ago(lookback)
+    | where ResultType == 0                              // sign-in succeeded
+    | where RiskLevelDuringSignIn in~ ("medium", "high")
+            or RiskLevelAggregated in~ ("medium", "high")
+            or RiskState !in~ ("none", "")
+    | project SigninTime           = TimeGenerated,
+              Upn                  = tolower(UserPrincipalName),
+              SigninIP             = IPAddress,
+              SigninLocation       = strcat(tostring(LocationDetails.city), ", ", tostring(LocationDetails.countryOrRegion)),
+              SigninApp            = AppDisplayName,
+              SigninCorrelationId  = CorrelationId,
+              SigninRiskLevel      = coalesce(RiskLevelDuringSignIn, RiskLevelAggregated),
+              SigninDeviceCompliant = tostring(DeviceDetail.isCompliant);
+let RuleOps =
+    OfficeActivity
+    | where TimeGenerated > ago(lookback)
+    | where Operation in~ (
+        "New-InboxRule", "Set-InboxRule", "UpdateInboxRules", "Enable-InboxRule"
+    )
+    | project RuleTime  = TimeGenerated,
+              Upn       = tolower(UserId),
+              RuleClientIP = ClientIP,
+              Operation,
+              Parameters;
+RiskySignins
+| join kind=inner RuleOps on Upn
+| where datetime_diff('second', RuleTime, SigninTime) between (0 .. (10 * 60))
+| extend MinutesAfterSignin = round(datetime_diff('second', RuleTime, SigninTime) / 60.0, 1)
+// Pull out the most damning rule attributes for fast triage.
+| extend ParamsJson = parse_json(Parameters)
+| extend MovesTo        = tostring(ParamsJson.[?Name=='MoveToFolder'].Value),
+         MarksAsRead    = tostring(ParamsJson.[?Name=='MarkAsRead'].Value),
+         DeletesMessage = tostring(ParamsJson.[?Name=='DeleteMessage'].Value),
+         ForwardsTo     = tostring(ParamsJson.[?Name=='ForwardTo'].Value),
+         RedirectsTo    = tostring(ParamsJson.[?Name=='RedirectTo'].Value)
+| project SigninTime, RuleTime, MinutesAfterSignin, Upn,
+          SigninIP, SigninLocation, SigninApp,
+          SigninRiskLevel, SigninDeviceCompliant,
+          RuleClientIP, Operation,
+          MovesTo, MarksAsRead, DeletesMessage, ForwardsTo, RedirectsTo,
+          Parameters
+| sort by SigninTime desc
