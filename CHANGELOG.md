@@ -4,6 +4,22 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (security hardening batch)
+- **`zizmor` CI job** in `.github/workflows/lint.yml` — purpose-built GitHub Actions YAML linter. Catches script injection via `${{ }}` in `run:` blocks, `permissions: write-all` defaults, `pull_request_target` misuse, and unpinned third-party Actions. Uploads SARIF to GitHub code-scanning (`Security → Code scanning alerts`). Runs in audit mode initially (`--no-error-on-findings`) so existing findings can be triaged before CI hard-fails.
+- **`dependency-review` CI job** in `.github/workflows/lint.yml` — flags vulnerable Actions / dependencies introduced in PRs, posts a summary comment on failure, fails the PR on `high`-severity issues.
+- **`step-security/harden-runner`** added in **audit mode** to every workflow that holds write permissions:
+  - `daily-draft.yml` (contents + pull-requests write — highest risk; also calls Claude over network)
+  - `todo-sync.yml` (contents: write — commits sync back to main)
+  - `daily-reminder.yml` (issues: write)
+  - `discord-reminder.yml` (contents: read — added preemptively because it egresses to Discord)
+  Audit mode logs every outbound connection and runner action without blocking. Plan to flip to `block` after 1 week of clean runs once the allowed-endpoints list is stable. New TODO items track the promotion and remaining add-points.
+
+### Follow-ups noted in TODO
+- SHA-pin every third-party Action (Dependabot already configured to keep SHA pins current).
+- Promote `harden-runner` to `block` mode after baseline.
+- Add `harden-runner` to read-only workflows (`lint`, `scorecard`).
+- Triage zizmor findings then tighten its severity threshold to `medium`.
+
 ### Added (security + Thursday threat-intel batch)
 - **`.github/workflows/scorecard.yml`** — OpenSSF Scorecard analysis on every push to `main` and weekly (Mon 13:23 UTC). Uploads SARIF to GitHub Code-scanning so findings appear under Security → Code scanning alerts, and publishes to the OpenSSF API so a public Scorecard badge can be added once the first run completes.
 - **TTP roundup:** `threat-intelligence/ttps/aitm-phishing-kits.md` — Adversary-in-the-Middle phishing kits (evilginx2 / Modlishka / Tycoon 2FA / Mamba 2FA / NakedPages / Greatness / Caffeine / Storm-1575). Mapped to T1557 / T1606.002 / T1078.004 / T1556.006 / T1539; cross-links to Scattered Spider profile and the password-spray + beaconing detections; full defender playbook from prevention through containment.

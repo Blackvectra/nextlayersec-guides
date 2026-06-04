@@ -192,6 +192,10 @@ _No purple-team labs shipped yet._
 
 ## Repo hygiene & infrastructure (manual)
 
+- [ ] **SHA-pin all third-party Actions** — replace tag pins with SHA + tag comment for `DavidAnson/markdownlint-cli2-action`, `lycheeverse/lychee-action`, `crate-ci/typos`, `anthropics/claude-code-action`, `step-security/harden-runner`, `ossf/scorecard-action`, `actions/dependency-review-action`. Dependabot (already enabled) will keep them current.
+- [ ] **Promote `harden-runner` from `audit` to `block` mode** in `daily-draft.yml`, `todo-sync.yml`, `daily-reminder.yml`, `discord-reminder.yml` once 1 week of audit-mode runs has produced a stable allowed-endpoints list.
+- [ ] **Add `harden-runner` to `lint.yml` and `scorecard.yml`** jobs.
+- [ ] **Triage and fix `zizmor` findings**, then tighten its CI step to `--min-severity=medium` (currently runs but doesn't fail the build).
 - [x] `LICENSE` (MIT)
 - [x] `SECURITY.md`
 - [x] `CODEOWNERS`
