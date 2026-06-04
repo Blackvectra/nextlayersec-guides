@@ -12,6 +12,11 @@ extend-ignore-re = [
     "\\bT[0-9]{4}(\\.[0-9]{3})?\\b",
     # Sigma rule UUIDs.
     "\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b",
+    # Vendor / product names that contain English-looking substrings the
+    # spell-checker mis-flags (e.g. MOVEit → "Eit").
+    "\\bMOVEit\\b",
+    # Windows CLI format-output flag (`schtasks /fo csv`, `wevtutil /fo xml`).
+    "(?:^|\\s)/fo\\b",
 ]
 
 [default.extend-words]
