@@ -73,7 +73,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Spell check
-        uses: crate-ci/typos@master
+        # Pinned to v1 (latest released v1.x). DO NOT use @master — that's a
+        # moving target that runs any commit pushed to the branch tip.
+        uses: crate-ci/typos@v1
         with:
           config: ./.typos.toml
 

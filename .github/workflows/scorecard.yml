@@ -1,0 +1,60 @@
+# OpenSSF Scorecard — automated security-posture analysis.
+#
+# Runs on every push to main and weekly. Posts SARIF results to GitHub's
+# Code-scanning so findings appear under Security → Code scanning alerts,
+# and (optionally) publishes results to the OpenSSF Scorecard API so a
+# public badge can be added to README.md.
+#
+# Docs: https://github.com/ossf/scorecard-action
+
+name: OpenSSF Scorecard
+
+on:
+  branch_protection_rule:
+  schedule:
+    - cron: '23 13 * * 1'    # Mondays 13:23 UTC
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Tighten default for all jobs in this workflow.
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      # Upload SARIF to code-scanning.
+      security-events: write
+      # OIDC for publish_results.
+      id-token: write
+      # Read repo and Actions metadata.
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard
+        uses: ossf/scorecard-action@v2.4.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          # Publish to the OpenSSF API so we can add a public badge later.
+          publish_results: true
+
+      - name: Upload SARIF artifact (5-day retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: SARIF
+          path: results.sarif
+          retention-days: 5
+
+      - name: Upload SARIF to code-scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
