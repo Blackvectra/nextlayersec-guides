@@ -41,7 +41,7 @@ This playbook covers an **active or imminent ransomware encryption event** — f
 ### Network
 
 - **Isolate affected hosts via EDR.** Do NOT shut down or log off — preserve memory and live process state for forensics.
-- **Disconnect file shares.** Stop the SMB service on file servers showing write activity; remove writeable SMB exports. Block SMB (TCP 445) and RPC (TCP 135) at internal segmentation boundaries.
+- **Disconnect file shares.** Stop the SMB service on file servers showing write activity; remove writable SMB exports. Block SMB (TCP 445) and RPC (TCP 135) at internal segmentation boundaries.
 - **Quarantine the network segment** if encryption is spreading laterally. Switch port shutdown / NAC quarantine VLAN if available.
 - **Block egress** for any C2 destinations the attacker may be controlling — see [`T1071.001_beaconing-rare-https`](../detections/kql/T1071.001_beaconing-rare-https.md).
 
