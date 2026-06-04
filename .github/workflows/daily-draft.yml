@@ -1,0 +1,377 @@
+name: Daily draft (Tier 3 — agentic, all 7 days)
+
+# Every day, runs Claude Code headlessly to DRAFT the day's content for the
+# matching lane and open a DRAFT pull request for you to review. Pings
+# Discord when done. Nothing lands on main automatically — drafts only.
+#
+# Lanes (US Central weekday):
+#   Mon → CVE write-up      Tue → KQL + Sigma detection
+#   Wed → IR playbook       Thu → Threat-intel note
+#   Fri → Tools/frameworks  Sat → Repo-hygiene fix
+#   Sun → Weekly review (CHANGELOG entry, re-prioritize TODO 🔥 Next up)
+#
+# Requires repo secrets:
+#   ANTHROPIC_API_KEY   — for the Claude Code action
+#   DISCORD_WEBHOOK_URL — for the completion ping (optional)
+#
+# Fires 13:30 UTC daily. Trigger manually via "Run workflow" any time, and
+# optionally force a lane via the input.
+
+on:
+  schedule:
+    - cron: '30 13 * * *'
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: 'Force lane (cve | detection | playbook | threat-intel | tools | cleanup | review). Blank = auto by weekday.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine lane
+        id: prep
+        env:
+          LANE_INPUT: ${{ github.event.inputs.lane }}
+        run: |
+          set -euo pipefail
+          if [ -n "${LANE_INPUT:-}" ]; then
+            echo "lane=${LANE_INPUT}" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          case "$(TZ=America/Chicago date +%u)" in
+            1) echo "lane=cve" >> "$GITHUB_OUTPUT" ;;
+            2) echo "lane=detection" >> "$GITHUB_OUTPUT" ;;
+            3) echo "lane=playbook" >> "$GITHUB_OUTPUT" ;;
+            4) echo "lane=threat-intel" >> "$GITHUB_OUTPUT" ;;
+            5) echo "lane=tools" >> "$GITHUB_OUTPUT" ;;
+            6) echo "lane=cleanup" >> "$GITHUB_OUTPUT" ;;
+            7) echo "lane=review" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # -------- Common preamble for all prompts --------
+      # Each lane's prompt MUST follow these rules:
+      # - Never fabricate facts (CVSS scores, KB numbers, vendor specifics).
+      #   Mark anything unverified as "TBD — verify" and list it in the PR body.
+      # - Create a new branch `auto/<lane>-<short-slug>` and a DRAFT PR.
+      # - Run `npx --yes markdownlint-cli2 "**/*.md"` and fix anything new it flags.
+      # - If the lane adds content under detections/, run `python scripts/sync-todo.py`.
+      # - Don't modify existing published files unless the task specifically
+      #   says to (the only "edits-allowed" lanes are tools, cleanup, review).
+
+      - name: Lane — Monday CVE
+        if: steps.prep.outputs.lane == 'cve'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 25 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Draft a new CVE write-up.
+            1. curl https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+            2. Pick the most recently added CVE that does NOT already have a file
+               in vulnerabilities/ AND that prioritizes the maintainer's daily
+               operating environment, in this preference order:
+                 a. Microsoft Windows (client / server), Active Directory,
+                    Entra ID, Exchange, SharePoint, Office / M365, Defender,
+                    Intune, Windows Server roles (DNS, IIS, RDS).
+                 b. Common edge / identity / virtualization gear deployed
+                    alongside Windows fleets in MSP environments: Fortinet,
+                    Cisco ASA / IOS XE / Firepower, Palo Alto PAN-OS,
+                    SonicWall, Citrix ADC / NetScaler, Ivanti Connect Secure
+                    / EPM, VMware vCenter / ESXi, F5 BIG-IP, Atlassian,
+                    MOVEit, ConnectWise, Veeam, Kaseya, SolarWinds.
+                 c. Popular third-party endpoint software on Windows fleets:
+                    Google Chrome, Microsoft Edge, Firefox, Adobe Reader /
+                    Acrobat, 7-Zip, WinRAR, Notepad++, Zoom, Slack,
+                    Java / OpenJDK, .NET runtime.
+                 d. Other CVEs only if no a / b / c candidates are available
+                    in the most recent ~20 KEV additions.
+               If a top-priority candidate exists, choose it even if it's not
+               the absolute newest entry.
+            3. Create vulnerabilities/CVE-YYYY-NNNNN.md following
+               vulnerabilities/template.md (summary, impact, remediation,
+               framework mapping, detection guidance, references). Only public
+               facts; mark unverified as "TBD — verify".
+            4. Run python scripts/sync-todo.py (it will tick the CVE section).
+            5. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            6. Branch auto/cve-<cveid>; commit; open a DRAFT PR titled
+               "Draft: CVE write-up <CVE-ID>". In the body list every
+               "TBD — verify" field for me to check.
+
+      - name: Lane — Tuesday Detection
+        if: steps.prep.outputs.lane == 'detection'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 30 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Draft a new detection (KQL + Sigma) for an uncovered ATT&CK technique.
+            1. Read COVERAGE.md and TODO.md's "Detection backlog (manual)" section. Pick the highest-priority technique that does NOT already have a file in detections/kql/.
+            2. Author detections/kql/T<id>_<slug>.kql + .md, following the existing files (T1547.001 is the most recent template).
+            3. Author detections/sigma/T<id>_<slug>.yml + .md. Use real UUID. Run python detections/sigma/validate_rules.py and fix any pysigma error.
+            4. Add a row to COVERAGE.md (Persistence/Lateral Movement/etc tactic) and bump the per-tactic count.
+            5. Run python scripts/sync-todo.py.
+            6. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            7. Branch auto/detection-t<id>; commit; open a DRAFT PR titled "Draft: detection T<id> — <name>". Body: explain logic and call out any thresholds / table-name assumptions to verify.
+
+      - name: Lane — Wednesday Playbook
+        if: steps.prep.outputs.lane == 'playbook'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 30 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Draft a new IR playbook from TODO.md's "Playbooks → Backlog (manual)" list. Pick the top untouched one (start with Ransomware outbreak unless already shipped).
+            1. Author blue-team-playbooks/<scenario>.md using blue-team-playbooks/_template.md as structure (trigger / scope / triage / containment / eradication / recovery / lessons learned / framework mapping / references).
+            2. Cross-link to relevant detections in detections/ if applicable.
+            3. Run python scripts/sync-todo.py.
+            4. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            5. Branch auto/playbook-<slug>; commit; open a DRAFT PR titled "Draft: playbook — <scenario>". Body summarizes the trigger and the containment-now decisions.
+
+      - name: Lane — Thursday Threat intel
+        if: steps.prep.outputs.lane == 'threat-intel'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 30 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Draft a threat-intel note. Decide which sub-area is least covered (actors / campaigns / ttps) by inspecting threat-intelligence/. Default order if all equal: TTP roundup first (AiTM phishing kits, OAuth consent phishing, AS-REP roasting, MFA fatigue), then a second actor profile (Lazarus, FIN7, Konni), then a campaign.
+            1. Use the matching _template.md in threat-intelligence/<area>/.
+            2. Cite primary sources (CISA, NCSC, Microsoft, Mandiant, Google TAG). Mark anything you cannot verify "TBD — verify".
+            3. Cross-link to relevant detections.
+            4. Run python scripts/sync-todo.py.
+            5. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            6. Branch auto/threat-intel-<slug>; commit; open a DRAFT PR titled "Draft: threat intel — <name>". Body lists "TBD — verify" items.
+
+      - name: Lane — Friday Tools/frameworks
+        if: steps.prep.outputs.lane == 'tools'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 20 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Improve tools/blue-team-tools.md OR one frameworks/*.md page.
+            Strategy: pick whichever has the smallest "next concrete improvement". Either add 3–6 new high-quality tool entries with brief one-line descriptions and links, or deepen a framework page with a "How to use in a SOC" subsection.
+            1. Make the edit additively (do not delete existing entries unless they're dead links).
+            2. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            3. Branch auto/tools-<date>; commit; open a DRAFT PR titled "Draft: tools/frameworks update — <topic>".
+
+      - name: Lane — Saturday Cleanup
+        if: steps.prep.outputs.lane == 'cleanup'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 20 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Repo-hygiene day. Look at TODO.md "Repo hygiene & infrastructure (manual)" and pick the top unchecked item that's small. Examples in order:
+              - Add `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1).
+              - Add `typos` spell-check CI job (crate-ci/typos GH action).
+              - Add CI status / license badges to README.
+              - Add a YARA syntax-check CI job (yara binary, validate _template.yar).
+            Implement ONE such item (the smallest), end-to-end:
+            1. Add the file(s) / CI changes.
+            2. Update README / TODO if needed (TODO is auto-synced; only update the manual hygiene section).
+            3. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            4. Branch auto/cleanup-<slug>; commit; open a DRAFT PR titled "Draft: cleanup — <item>".
+
+      - name: Lane — Sunday Weekly review
+        if: steps.prep.outputs.lane == 'review'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 20 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Weekly review.
+            1. Look at merged PRs from the last 7 days (use git log --since="7 days ago" --merges and git log --since="7 days ago" --oneline).
+            2. Append a dated "Week of YYYY-MM-DD" subsection under CHANGELOG.md "[Unreleased]" summarizing the week's shipped work in 5–10 bullets.
+            3. Re-evaluate TODO.md "🔥 Next up (manual — order by what you want to ship)" — keep it to 5 items, removing anything that shipped this week, adding the next highest-leverage items from the manual backlogs below it.
+            4. Run python scripts/sync-todo.py.
+            5. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            6. Branch auto/review-<date>; commit; open a DRAFT PR titled "Draft: weekly review — week of YYYY-MM-DD". Body: paste the new CHANGELOG bullets.
+
+      # ===== Fact-check + auto-merge gate =====
+      # Three layers of protection before anything lands on main:
+      #   1. Regex precheck for "TBD — verify" / FIXME / TODO markers in the diff
+      #   2. Adversarial Claude review (skeptic role) that verifies citations,
+      #      MITRE technique IDs, CVE IDs, and cross-references
+      #   3. GitHub native auto-merge (waits for all required CI checks)
+      #
+      # Kill switch: set repo variable AUTO_MERGE_ENABLED=false to gate everything
+      # to manual merge (the fact-check still runs and posts its verdict as a
+      # comment).
+      - name: Find the draft PR this lane created
+        id: findpr
+        if: success() && steps.prep.outputs.lane != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LANE: ${{ steps.prep.outputs.lane }}
+        run: |
+          set -euo pipefail
+          PR=$(gh pr list --state open --draft \
+                 --json number,headRefName,createdAt \
+                 --jq "[.[] | select(.headRefName | startswith(\"auto/${LANE}\"))] | sort_by(.createdAt) | last | .number")
+          if [ -z "$PR" ] || [ "$PR" = "null" ]; then
+            echo "::warning::No draft PR found for lane=${LANE} — skipping fact-check / merge"
+            echo "pr=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Found PR #$PR for lane $LANE"
+            echo "pr=$PR" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Regex precheck (fast rejection of unverified content)
+        id: precheck
+        if: steps.findpr.outputs.pr != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.findpr.outputs.pr }}
+        run: |
+          set -euo pipefail
+          git fetch origin "refs/pull/${PR}/head:pr-${PR}" >/dev/null
+          DIFF=$(git diff "origin/main...pr-${PR}")
+          # Patterns that mean "the drafter didn't fully verify this"
+          if printf '%s' "$DIFF" | grep -inE 'TBD[[:space:]—-]+verify|^\+.*\bFIXME\b|^\+.*\bXXX\b|^\+.*\b\?\?\?\?' >/tmp/precheck-hits.txt; then
+            HITS=$(head -20 /tmp/precheck-hits.txt)
+            BODY=$'🚫 **Auto-merge precheck failed** — the diff contains unverified-fact markers (TBD/FIXME/XXX/????). Fix them or remove the markers, then mark the PR ready manually.\n\nFirst hits:\n```\n'"$HITS"$'\n```'
+            gh pr comment "$PR" --body "$BODY"
+            gh pr edit "$PR" --add-label "needs-review" 2>/dev/null || true
+            echo "verdict=fail-precheck" >> "$GITHUB_OUTPUT"
+          else
+            echo "Precheck PASS — no unverified-fact markers."
+            echo "verdict=pass" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Adversarial fact-check (Claude skeptic)
+        if: steps.precheck.outputs.verdict == 'pass'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 15 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            ROLE: skeptical security-content reviewer. Your job is to refute,
+            not assist. Default to FAIL when uncertain. This is the last gate
+            before content is auto-merged to main.
+
+            INPUT: the git diff between origin/main and HEAD for the PR you
+            are reviewing. Run:
+                git diff origin/main...HEAD
+
+            CHECK each newly added or modified file for these failure
+            conditions. ANY single failure → overall FAIL.
+
+            CVE write-ups (vulnerabilities/CVE-*.md):
+              - CVE ID format is CVE-YYYY-NNNNN.
+              - The file references the CISA KEV catalog OR an authoritative
+                vendor advisory URL (Microsoft MSRC, Cisco PSIRT, etc.). A
+                CVE write-up with zero external citations fails.
+              - No hand-written CVSS vector that wasn't sourced.
+
+            Detections (detections/kql/T*.kql, detections/sigma/T*.yml,
+            detections/*/T*.md):
+              - The MITRE technique ID (T1234 or T1234.NNN) exists on
+                attack.mitre.org and matches the file content.
+              - For Sigma: file passes `python detections/sigma/validate_rules.py`.
+              - For KQL: column / table names look real for Defender XDR or
+                Sentinel (DeviceProcessEvents, DeviceFileEvents, SigninLogs,
+                DeviceEvents, DeviceRegistryEvents). Reject obvious
+                hallucinations.
+
+            Playbooks / threat intel:
+              - Every actor alias, campaign name, or factual claim ("targeting
+                the financial sector since 2022", "uses BlackCat ransomware",
+                etc.) needs either an in-line citation or appears in the
+                References section. A profile with zero references fails.
+              - No fabricated attribution. If the diff says "attributed to
+                <group>" the References must include a primary-source
+                attribution (CISA, Microsoft TI, Mandiant, etc.).
+
+            Tools / frameworks pages:
+              - Every tool entry has a URL.
+              - URLs look real (no .invalid, no example.com, no obvious
+                typo-squats).
+
+            Cross-references:
+              - Every [label](relative/path) in the diff resolves to an
+                existing file. Check by attempting `ls <path>` from repo root.
+
+            HOW TO OUTPUT:
+              Write exactly ONE line to /tmp/fact-check-verdict.txt.
+              On success:
+                FACT_CHECK: PASS
+              On any failure:
+                FACT_CHECK: FAIL: <one short reason>
+
+              Also write a human-readable summary to /tmp/fact-check-report.md
+              (markdown bullets, one per finding, max 15 bullets).
+
+            Do NOT modify any tracked files. This is read-only verification.
+
+      - name: Apply verdict
+        if: steps.precheck.outputs.verdict == 'pass'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.findpr.outputs.pr }}
+          AUTO_MERGE_ENABLED: ${{ vars.AUTO_MERGE_ENABLED || 'true' }}
+        run: |
+          set -euo pipefail
+          VERDICT=$(cat /tmp/fact-check-verdict.txt 2>/dev/null | head -1 || echo "FACT_CHECK: FAIL: verdict file missing")
+          REPORT=$(cat /tmp/fact-check-report.md 2>/dev/null || echo "_no report produced_")
+          echo "VERDICT: $VERDICT"
+
+          if echo "$VERDICT" | grep -q '^FACT_CHECK: PASS$'; then
+            BODY=$'✅ **Fact-check passed.**\n\n'"$REPORT"
+            if [ "$AUTO_MERGE_ENABLED" != "true" ]; then
+              gh pr comment "$PR" --body "$BODY"$'\n\n_Auto-merge is OFF (`AUTO_MERGE_ENABLED=false`). Marking ready; merge manually when satisfied._'
+              gh pr ready "$PR"
+            else
+              gh pr comment "$PR" --body "$BODY"$'\n\n_Marking ready and enabling auto-merge. Will merge once all required CI checks pass._'
+              gh pr ready "$PR"
+              gh pr merge "$PR" --auto --squash --delete-branch
+            fi
+          else
+            REASON=$(printf '%s' "$VERDICT" | sed 's/^FACT_CHECK: FAIL: //')
+            BODY=$'🚫 **Fact-check FAILED:** '"$REASON"$'\n\n'"$REPORT"$'\n\n_PR left as draft for human review._'
+            gh pr comment "$PR" --body "$BODY"
+            gh pr edit "$PR" --add-label "needs-review" 2>/dev/null || true
+          fi
+
+      - name: Notify Discord
+        if: always()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+          LANE: ${{ steps.prep.outputs.lane }}
+          STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
+            echo "::warning::DISCORD_WEBHOOK_URL not set — skipping Discord ping."; exit 0
+          fi
+          if [ "$STATUS" = "success" ]; then
+            EMOJI="✅"; COLOR=3066993
+            MSG="Drafted a **${LANE}** entry and opened a draft PR for review."
+          else
+            EMOJI="⚠️"; COLOR=15548997
+            MSG="The **${LANE}** drafting run finished with status **${STATUS}** — check the Actions log."
+          fi
+          PAYLOAD=$(jq -n \
+            --arg title "$EMOJI Daily draft — $LANE" \
+            --arg desc "$MSG" \
+            --argjson color "$COLOR" \
+            --arg url "https://github.com/${REPO}/pulls?q=is%3Apr+is%3Aopen+is%3Adraft" \
+            '{username:"NextLayerSec", embeds:[{title:$title, description:$desc, color:$color, url:$url}]}')
+          curl -fsSL --max-time 30 -X POST -H "Content-Type: application/json" \
+            -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"

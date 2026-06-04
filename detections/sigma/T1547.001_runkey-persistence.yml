@@ -1,0 +1,51 @@
+title: Run / RunOnce Key Persistence by Non-Installer Process
+id: 1fd7ffab-e872-4872-855b-7e95253a9df9
+status: experimental
+description: >-
+  Detects writes to Windows Run / RunOnce / RunOnceEx keys and Winlogon
+  Shell / Userinit values, excluding common installer and updater binaries.
+  This is the most prevalent user-mode persistence technique used by loaders,
+  info-stealers, and post-exploitation toolkits.
+author: nextlayersec
+date: 2026/06/02
+references:
+  - https://attack.mitre.org/techniques/T1547/001/
+  - https://github.com/nextlayersec/nextlayersec-guides/blob/main/detections/kql/T1547.001_runkey-persistence.md
+tags:
+  - attack.persistence
+  - attack.t1547.001
+logsource:
+  product: windows
+  category: registry_event
+detection:
+  selection_runkey:
+    TargetObject|contains:
+      - '\Software\Microsoft\Windows\CurrentVersion\Run'
+      - '\Software\Microsoft\Windows\CurrentVersion\RunOnce'
+      - '\Software\Microsoft\Windows\CurrentVersion\RunOnceEx'
+      - '\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Run'
+      - '\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\RunOnce'
+      - '\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\Shell'
+      - '\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\Userinit'
+  selection_writeop:
+    EventType:
+      - 'SetValue'
+      - 'CreateKey'
+  filter_installers:
+    Image|endswith:
+      - '\msiexec.exe'
+      - '\setup.exe'
+      - '\install.exe'
+      - '\TrustedInstaller.exe'
+      - '\OneDriveSetup.exe'
+      - '\Update.exe'
+      - '\GoogleUpdate.exe'
+      - '\MicrosoftEdgeUpdate.exe'
+  filter_empty:
+    Details: '(Empty)'
+  condition: selection_runkey and selection_writeop and not 1 of filter_*
+falsepositives:
+  - In-house deployment or packaging tools (Chocolatey, Intune, custom MSI wrappers)
+  - Vendor agents (printer, VPN, creative tools) that pin themselves into Run
+  - Game launchers and update services not covered by the installer allowlist
+level: medium

@@ -1,0 +1,146 @@
+name: Discord daily reminder (Tier 2 — live data)
+
+# Posts the day's focus to a Discord channel via webhook, with live data
+# pulled for the lane:
+#   Mon (CVE)       → newest CISA KEV additions not yet in the repo
+#   Tue (Detection) → a rotating uncovered ATT&CK technique from the gap list
+#   Wed–Sun         → the lane's focus + relevant repo links
+#
+# Requires repo secret: DISCORD_WEBHOOK_URL
+# (Server → Channel → Edit → Integrations → Webhooks → New Webhook → Copy URL)
+#
+# Fires daily at 13:00 UTC = 8 AM CDT / 7 AM CST.
+
+on:
+  schedule:
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build and post reminder
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
+            echo "::warning::DISCORD_WEBHOOK_URL secret not set — skipping Discord post."
+            exit 0
+          fi
+
+          DOW=$(TZ=America/Chicago date +%a)
+          DATE=$(TZ=America/Chicago date +%Y-%m-%d)
+          DOY=$(TZ=America/Chicago date +%j)
+          BASE="https://github.com/${REPO}/blob/main"
+
+          TITLE=""
+          DESC=""
+          COLOR=5793266   # default slate
+
+          case "$DOW" in
+            Mon)
+              TITLE="🗓️ Monday — CVE day"
+              COLOR=15548997   # red
+              KEV_URL="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+              HAVE=$(ls vulnerabilities/ 2>/dev/null | grep -oiE 'CVE-[0-9]{4}-[0-9]+' \
+                      | tr '[:lower:]' '[:upper:]' | jq -R . | jq -s . || echo '[]')
+              if KEV=$(curl -fsSL --max-time 30 "$KEV_URL"); then
+                CANDS=$(echo "$KEV" | jq -r --argjson have "$HAVE" '
+                  .vulnerabilities
+                  | sort_by(.dateAdded) | reverse
+                  | map(select((.cveID as $c | ($have | index($c))) | not))
+                  | .[0:5]
+                  | map("• **\(.cveID)** — \(.vendorProject) \(.product): \(.shortDescription[0:110]) _(added \(.dateAdded))_")
+                  | join("\n")')
+                DESC=$(printf '%s\n\n%s\n%s\n\n%s' \
+                  "Write up one fresh **CISA KEV** addition using \`vulnerabilities/template.md\`." \
+                  "**Newest KEV entries not yet in the repo:**" "$CANDS" \
+                  "→ [template]($BASE/vulnerabilities/template.md) · [KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)")
+              else
+                DESC=$(printf '%s\n\n%s' \
+                  "Write up one fresh CISA KEV addition (live feed fetch failed today)." \
+                  "→ [template]($BASE/vulnerabilities/template.md) · [KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)")
+              fi
+              ;;
+            Tue)
+              TITLE="🛡️ Tuesday — Detection day"
+              COLOR=3447003   # blue
+              GAPS=(
+                "T1547.001 — Run / RunOnce key persistence"
+                "T1053.005 — Scheduled task creation"
+                "T1543.003 — Windows service creation"
+                "T1021.001 — RDP lateral movement"
+                "T1021.002 — SMB / admin shares"
+                "T1071.001 — Web-protocol C2 / beaconing"
+                "T1572 — Protocol tunneling"
+                "T1567 — Exfiltration over web service"
+                "T1218.011 — rundll32 LOLBin abuse"
+                "T1078.004 — risky sign-in + mailbox rule"
+              )
+              IDX=$(( 10#$DOY % ${#GAPS[@]} ))
+              PICK="${GAPS[$IDX]}"
+              DESC=$(printf '%s\n\n**Suggested uncovered technique:** %s\n\n%s' \
+                "Add one KQL or Sigma detection. One rule per file, paired with a \`.md\` sibling." \
+                "$PICK" \
+                "→ [KQL template]($BASE/detections/kql/_template.kql) · [coverage gaps]($BASE/COVERAGE.md)")
+              ;;
+            Wed)
+              TITLE="📕 Wednesday — Playbook day"
+              COLOR=15844367   # gold
+              DESC=$(printf '%s\n\n%s' \
+                "Publish or expand one IR playbook from the priority list." \
+                "→ [template]($BASE/blue-team-playbooks/_template.md) · [backlog]($BASE/TODO.md)")
+              ;;
+            Thu)
+              TITLE="🔎 Thursday — Threat-intel day"
+              COLOR=10181046   # purple
+              DESC=$(printf '%s\n\n%s' \
+                "Add one actor profile, campaign write-up, or TTP roundup." \
+                "→ [threat-intelligence/]($BASE/threat-intelligence) · [backlog]($BASE/TODO.md)")
+              ;;
+            Fri)
+              TITLE="🧰 Friday — Tools / frameworks day"
+              COLOR=3066993   # green
+              DESC=$(printf '%s\n\n%s' \
+                "Review one tool or deepen one framework page." \
+                "→ [tools]($BASE/tools/blue-team-tools.md) · [frameworks]($BASE/frameworks)")
+              ;;
+            Sat)
+              TITLE="🧹 Saturday — Cleanup day"
+              COLOR=9807270   # grey
+              DESC=$(printf '%s\n\n%s' \
+                "Repo hygiene: run lint, fix links, prune stale TODOs." \
+                "→ \`npx markdownlint-cli2 \"**/*.md\"\` · [CONTRIBUTING]($BASE/CONTRIBUTING.md)")
+              ;;
+            *)
+              TITLE="📒 Sunday — Changelog & review"
+              COLOR=9807270
+              DESC=$(printf '%s\n\n%s' \
+                "Update CHANGELOG with the week's additions; re-prioritize the backlog." \
+                "→ [CHANGELOG]($BASE/CHANGELOG.md) · [TODO]($BASE/TODO.md)")
+              ;;
+          esac
+
+          PAYLOAD=$(jq -n \
+            --arg title "$TITLE" \
+            --arg desc "$DESC" \
+            --argjson color "$COLOR" \
+            --arg footer "NextLayerSec • $DATE • auto-reminder" \
+            --arg url "https://github.com/${REPO}/blob/main/TODO.md" \
+            '{username:"NextLayerSec",
+              embeds:[{title:$title, description:$desc, color:$color,
+                       url:$url, footer:{text:$footer}}]}')
+
+          curl -fsSL --max-time 30 -X POST \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"
+          echo "Posted $DOW reminder to Discord."

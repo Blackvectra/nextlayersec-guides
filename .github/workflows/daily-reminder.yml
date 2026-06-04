@@ -1,8 +1,6 @@
 name: Daily TODO reminder
 
-# Fires every day at 13:00 UTC = 8:00 AM CDT (US Central, summer)
-# = 7:00 AM CST (US Central, winter). GitHub Actions cron does not
-# auto-adjust for DST; edit this expression if the wintertime shift bothers you.
+# Fires daily at 13:00 UTC = 8 AM CDT / 7 AM CST (no DST auto-adjust).
 on:
   schedule:
     - cron: '0 13 * * *'
@@ -16,7 +14,7 @@ jobs:
   open-reminder:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Open today's focus issue
         uses: actions/github-script@v9
