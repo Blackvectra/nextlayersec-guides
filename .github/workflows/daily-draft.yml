@@ -35,7 +35,7 @@ jobs:
   draft:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -90,12 +90,16 @@ jobs:
                     Intune, Windows Server roles (DNS, IIS, RDS).
                  b. Common edge / identity / virtualization gear deployed
                     alongside Windows fleets in MSP environments: Fortinet,
-                    Cisco ASA / IOS XE / Firepower, Palo Alto PAN-OS, Citrix
-                    ADC / NetScaler, Ivanti Connect Secure / EPM, VMware
-                    vCenter / ESXi, F5 BIG-IP, Atlassian, MOVEit, ConnectWise,
-                    Veeam, Kaseya, SolarWinds.
-                 c. Other CVEs only if no a / b candidates are available in
-                    the most recent ~20 KEV additions.
+                    Cisco ASA / IOS XE / Firepower, Palo Alto PAN-OS,
+                    SonicWall, Citrix ADC / NetScaler, Ivanti Connect Secure
+                    / EPM, VMware vCenter / ESXi, F5 BIG-IP, Atlassian,
+                    MOVEit, ConnectWise, Veeam, Kaseya, SolarWinds.
+                 c. Popular third-party endpoint software on Windows fleets:
+                    Google Chrome, Microsoft Edge, Firefox, Adobe Reader /
+                    Acrobat, 7-Zip, WinRAR, Notepad++, Zoom, Slack,
+                    Java / OpenJDK, .NET runtime.
+                 d. Other CVEs only if no a / b / c candidates are available
+                    in the most recent ~20 KEV additions.
                If a top-priority candidate exists, choose it even if it's not
                the absolute newest entry.
             3. Create vulnerabilities/CVE-YYYY-NNNNN.md following

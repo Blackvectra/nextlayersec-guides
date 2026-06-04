@@ -3,9 +3,10 @@
 Selective CVE library. Quality over quantity. Selection priority (top is most relevant to this repo's target environment — Windows-heavy MSP / SOC fleets):
 
 1. **Microsoft Windows ecosystem** — Windows client/server, Active Directory, Entra ID, Exchange, SharePoint, Office / M365, Defender, Intune, Windows Server roles.
-2. **Edge / identity / virtualization gear deployed alongside Windows fleets** — Fortinet, Cisco ASA / IOS XE / Firepower, Palo Alto PAN-OS, Citrix ADC / NetScaler, Ivanti Connect Secure / EPM, VMware vCenter / ESXi, F5 BIG-IP, Atlassian, MOVEit, ConnectWise, Veeam, Kaseya, SolarWinds.
-3. **Anything with a public PoC or in-the-wild exploitation**, especially CISA KEV catalog additions.
-4. Other CVEs only when 1–3 have nothing fresh.
+2. **Edge / identity / virtualization gear deployed alongside Windows fleets** — Fortinet, Cisco ASA / IOS XE / Firepower, Palo Alto PAN-OS, **SonicWall**, Citrix ADC / NetScaler, Ivanti Connect Secure / EPM, VMware vCenter / ESXi, F5 BIG-IP, Atlassian, MOVEit, ConnectWise, Veeam, Kaseya, SolarWinds.
+3. **Popular third-party endpoint software on Windows fleets** — Google Chrome, Microsoft Edge, Mozilla Firefox, Adobe Reader / Acrobat, 7-Zip, WinRAR, Notepad++, Zoom, Slack, OneDrive / Teams (when not already in bucket 1), Java / OpenJDK, .NET runtime.
+4. **Anything with a public PoC or in-the-wild exploitation**, especially CISA KEV catalog additions.
+5. Other CVEs only when 1–4 have nothing fresh.
 
 Within those buckets, prefer CISA KEV entries, then anything actively exploited per vendor or government advisory.
 

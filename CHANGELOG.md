@@ -4,6 +4,10 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Changed (consolidation)
+- All in-flight work consolidated onto a single branch and PR. The actions/checkout bump from Dependabot PR #6 was rolled in (v4 → v6 across `discord-reminder`, `lint`, `todo-sync`, `daily-reminder`, `daily-draft`; `codeql.yml` left untouched as GitHub-managed default setup).
+- CVE-selection priority list expanded: added **SonicWall** to the network/identity-gear bucket, plus a new dedicated bucket for **popular third-party endpoint software on Windows fleets** (Google Chrome, Microsoft Edge, Firefox, Adobe Reader/Acrobat, 7-Zip, WinRAR, Notepad++, Zoom, Slack, Java/OpenJDK, .NET runtime). Updated `vulnerabilities/README.md`, `CONTRIBUTING.md`, and the Mon CVE prompt in `daily-draft.yml`.
+
 ### Changed (CVE selection bias)
 - CVE selection now prioritizes the Windows / MSP environment in this order: (1) Microsoft Windows ecosystem; (2) edge/identity/virtualization gear deployed alongside Windows fleets (Fortinet, Cisco, Palo Alto, Citrix, Ivanti, VMware, F5, Atlassian, MOVEit, ConnectWise, Veeam, Kaseya, SolarWinds); (3) CISA KEV entries with public PoC / ITW exploitation; (4) other only as fallback.
 - `vulnerabilities/README.md`, `CONTRIBUTING.md`, and the Mon CVE prompt in `.github/workflows/daily-draft.yml` updated to encode the same priority.
