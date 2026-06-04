@@ -8,6 +8,7 @@ Step-by-step incident response procedures. Each playbook follows the same struct
 |----------|------|--------|
 | Suspicious network traffic | [incident-response-suspicious-network.md](incident-response-suspicious-network.md) | published |
 | Phishing email triage | [phishing-email-triage.md](phishing-email-triage.md) | published |
+| Ransomware outbreak | [ransomware-outbreak.md](ransomware-outbreak.md) | published |
 | Ransomware outbreak | _todo_ | planned |
 | Business email compromise (BEC) | _todo_ | planned |
 | Credential theft / password spray | _todo_ | planned |

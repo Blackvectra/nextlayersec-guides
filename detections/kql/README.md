@@ -22,3 +22,4 @@ See [`_template.md`](_template.md) and [`_template.kql`](_template.kql).
 | T1110.003 | [`T1110.003_entra-password-spray`](T1110.003_entra-password-spray.md) | testing | Single IP fails sign-ins against many Entra users |
 | T1486 | [`T1486_mass-file-rename-ransomware`](T1486_mass-file-rename-ransomware.md) | testing | Process renames many files across directories — ransomware canary |
 | T1547.001 | [`T1547.001_runkey-persistence`](T1547.001_runkey-persistence.md) | testing | Non-installer process writes a Run / RunOnce / Winlogon autostart value |
+| T1071.001 | [`T1071.001_beaconing-rare-https`](T1071.001_beaconing-rare-https.md) | testing | Workstation makes sustained outbound HTTPS to a fleet-rare destination (C2 beacon) |

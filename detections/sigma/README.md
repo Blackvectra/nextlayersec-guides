@@ -22,3 +22,4 @@ python detections/sigma/validate_rules.py
 | T1110.003 | [`T1110.003_entra-password-spray`](T1110.003_entra-password-spray.md) | experimental | Single IP fails sign-ins against many Entra users (`value_count` correlation) |
 | T1486 | [`T1486_mass-file-rename-ransomware`](T1486_mass-file-rename-ransomware.md) | experimental | Process renames many files on one host — ransomware canary (`event_count` correlation) |
 | T1547.001 | [`T1547.001_runkey-persistence`](T1547.001_runkey-persistence.md) | experimental | Non-installer process writes a Run / RunOnce / Winlogon autostart value |
+| T1071.001 | [`T1071.001_beaconing-rare-https`](T1071.001_beaconing-rare-https.md) | experimental | Sustained HTTPS to a fleet-rare destination (`event_count` correlation; SIEM-side rarity check) |
