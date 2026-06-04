@@ -1,0 +1,43 @@
+// Title: New Run / RunOnce key written by non-installer process
+// Technique: T1547.001 - Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder
+// Data source(s): DeviceRegistryEvents (Defender XDR / MDE)
+// Author: nextlayersec
+// Last updated: 2026-06-02
+//
+// Description:
+//   Catches a process writing a value to a Run / RunOnce key for either the
+//   current user (HKCU) or the whole machine (HKLM) when the initiating
+//   process is NOT a known installer / Microsoft-signed binary. The pattern
+//   covers user-mode persistence used by commodity loaders, info-stealers,
+//   and post-exploitation toolkits.
+
+let lookback = 1d;
+let runKeySuffixes = dynamic([
+    @"\Software\Microsoft\Windows\CurrentVersion\Run",
+    @"\Software\Microsoft\Windows\CurrentVersion\RunOnce",
+    @"\Software\Microsoft\Windows\CurrentVersion\RunOnceEx",
+    @"\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Run",
+    @"\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\RunOnce",
+    @"\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\Shell",
+    @"\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\Userinit"
+]);
+let knownInstallers = dynamic([
+    "msiexec.exe", "setup.exe", "install.exe", "trustedinstaller.exe",
+    "OneDriveSetup.exe", "TeamsUpdate.exe", "Update.exe", "vc_redist.x64.exe",
+    "vc_redist.x86.exe", "GoogleUpdate.exe", "MicrosoftEdgeUpdate.exe"
+]);
+DeviceRegistryEvents
+| where Timestamp > ago(lookback)
+| where ActionType in ("RegistryValueSet", "RegistryKeyCreated")
+| where RegistryKey has_any (runKeySuffixes)
+| where isnotempty(RegistryValueData)
+| where not(InitiatingProcessFileName in~ (knownInstallers))
+| where InitiatingProcessVersionInfoCompanyName !contains "Microsoft"
+| extend WroteToHKCU = RegistryKey startswith @"HKEY_CURRENT_USER" or RegistryKey contains @"\HKCU\",
+         WroteToHKLM = RegistryKey startswith @"HKEY_LOCAL_MACHINE" or RegistryKey contains @"\HKLM\"
+| project Timestamp, DeviceName, AccountName,
+          RegistryKey, RegistryValueName, RegistryValueData,
+          InitiatingProcessFileName, InitiatingProcessCommandLine,
+          InitiatingProcessFolderPath, InitiatingProcessVersionInfoCompanyName,
+          InitiatingProcessParentFileName, WroteToHKCU, WroteToHKLM, ReportId
+| sort by Timestamp desc

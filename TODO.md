@@ -1,83 +1,106 @@
 # TODO
 
-Working backlog for daily updates. Grab the top item in whichever lane matches the day, write it, PR it, check it off.
+Backlog ordered by realistic ship value. Grab a top item from a section, write it, PR it, tick it off. Done items are kept (with links) so the file doubles as a shipped-work log.
 
-Suggested cadence:
-
-- **Mon — CVE:** pick one fresh CISA KEV addition and write it up using `vulnerabilities/template.md`.
-- **Tue — Detection:** add one KQL or Sigma rule using a `detections/.../_template.*`.
-- **Wed — Playbook:** publish one playbook from the list below or expand an existing one.
-- **Thu — Threat intel:** add an actor profile, campaign, or TTP roundup.
-- **Fri — Tools / frameworks:** review a tool or deepen a framework page.
-- **Weekend:** cleanup, link-check, update `CHANGELOG.md`.
+> The scheduled reminder workflows under `.github/workflows/` (`daily-reminder`, `discord-reminder`, `daily-draft`) are **disabled on schedule** — they only run via manual dispatch from the Actions tab. This file is the source of truth; no auto-pings.
 
 ---
 
-## Playbooks (priority order)
+## 🔥 Next up (highest leverage)
+
+These are the smallest things that materially improve the repo.
+
+- [ ] **Ransomware-outbreak playbook** — pairs with the existing T1486 detection; biggest content gap in `blue-team-playbooks/`.
+- [ ] **Detection: T1071.001 — beacon-like outbound HTTPS to rare destination** — fills the Command & Control tactic gap (currently 0 in COVERAGE).
+- [ ] **Detection: T1078.004 — Entra risky sign-in followed by mailbox rule creation** — direct Scattered Spider TTP follow-up.
+- [ ] **YARA syntax check in CI** — finishes the "Sigma+YARA validation" item; small workflow addition.
+- [ ] **First TTP roundup** — AiTM phishing kits or MFA fatigue. Both tie back to Scattered Spider.
+
+---
+
+## Playbooks
+
+Priority order — top is highest demand for SOC readers.
 
 - [x] Phishing email triage — [`blue-team-playbooks/phishing-email-triage.md`](blue-team-playbooks/phishing-email-triage.md)
 - [ ] Ransomware outbreak
-- [ ] Business email compromise (BEC)
 - [ ] Credential theft / password spray
+- [ ] Cloud account compromise (Entra ID / AWS / GCP)
+- [ ] Business email compromise (BEC)
 - [ ] Lateral movement (RDP / SMB / WMI)
+- [ ] Malware infection (endpoint)
 - [ ] Data exfiltration
 - [ ] Insider threat
-- [ ] Malware infection (endpoint)
-- [ ] Cloud account compromise (Entra ID / AWS / GCP)
 - [ ] DDoS
 
 ## Detection workflows
 
-- [ ] Phishing email triage
 - [ ] Suspicious sign-in (impossible travel / risky IP)
 - [ ] Beaconing / C2 traffic
 - [ ] LOLBin abuse (rundll32, mshta, regsvr32)
-- [ ] Suspicious scheduled task / service install
 - [ ] Office macro execution
+- [ ] Phishing email triage (workflow, distinct from the playbook)
+- [ ] Suspicious scheduled task / service install
 
-## Detections (KQL / Sigma)
+## Detections (KQL + Sigma)
 
-- [ ] T1078.004 — Entra ID risky sign-in followed by mailbox rule creation
-- [ ] T1071.001 — beacon-like outbound HTTPS to rare destination
-- [x] T1110.003 — password spray against Entra ID / AD — [KQL](detections/kql/T1110.003_entra-password-spray.md) · [Sigma](detections/sigma/T1110.003_entra-password-spray.md)
-- [x] T1486 — mass file rename (ransomware canary) — [KQL](detections/kql/T1486_mass-file-rename-ransomware.md) · [Sigma](detections/sigma/T1486_mass-file-rename-ransomware.md)
-- [ ] T1218.011 — rundll32 with unusual command line
-- [ ] T1547.001 — new Run / RunOnce key written by non-installer
-- [ ] T1021.001 — RDP from unusual source
+Format: `T<id> — name — [KQL] · [Sigma]`. Tick when both ship.
+
 - [x] T1003.001 — LSASS access by non-system process — [KQL](detections/kql/T1003.001_lsass-access-suspicious.md) · [Sigma](detections/sigma/T1003.001_lsass-access-suspicious.md)
-- [x] Port the four existing KQL detections to Sigma — `detections/sigma/` (T1059.001, T1003.001, T1110.003, T1486)
+- [x] T1059.001 — PowerShell encoded command — [KQL](detections/kql/T1059.001_powershell-encoded-command.md) · [Sigma](detections/sigma/T1059.001_powershell-encoded-command.md)
+- [x] T1110.003 — Entra password spray — [KQL](detections/kql/T1110.003_entra-password-spray.md) · [Sigma](detections/sigma/T1110.003_entra-password-spray.md)
+- [x] T1486 — Mass file rename (ransomware canary) — [KQL](detections/kql/T1486_mass-file-rename-ransomware.md) · [Sigma](detections/sigma/T1486_mass-file-rename-ransomware.md)
+- [x] T1547.001 — Run / RunOnce key persistence — [KQL](detections/kql/T1547.001_runkey-persistence.md) · [Sigma](detections/sigma/T1547.001_runkey-persistence.md)
+- [ ] T1071.001 — Beacon-like outbound HTTPS to rare destination
+- [ ] T1078.004 — Entra risky sign-in + mailbox-rule creation
+- [ ] T1218.011 — rundll32 with unusual command line
+- [ ] T1021.001 — RDP from unusual source
+- [ ] T1053.005 — Scheduled task created by non-installer
+- [ ] T1543.003 — Windows service installed from user-writable path
 
 ## CVEs to write up
 
-- [ ] Pick from current [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
-- [ ] Backfill any CVE referenced in playbooks / detections
-
-## Purple-team labs
-
-- [ ] T1059.001 — Atomic Red Team encoded PowerShell tests vs. the KQL rule
-- [ ] T1078 — valid accounts (Entra ID)
-- [ ] T1021.001 — RDP lateral movement
-- [ ] T1055 — process injection
-- [ ] T1547.001 — run key persistence
+- [ ] One from the current [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) per session
+- [ ] Backfill any CVE referenced by playbooks / detections
+- [x] CVE-2025-50154 (NTLM disclosure in Explorer) — [`vulnerabilities/CVE-2025-50154.md`](vulnerabilities/CVE-2025-50154.md)
 
 ## Threat intel
 
 - [x] First actor profile — [Scattered Spider](threat-intelligence/actors/scattered-spider.md)
+- [ ] Second actor profile (suggestion: Lazarus / Konni / FIN7 — pick one your environment is realistically exposed to)
 - [ ] First campaign write-up
-- [ ] First TTP roundup (candidates: AiTM phishing kits, OAuth consent phishing, AS-REP roasting, MFA fatigue)
+- [ ] First TTP roundup — candidates: AiTM phishing kits, OAuth consent phishing, AS-REP roasting, MFA fatigue
 
-## Repo hygiene
+## Purple-team labs
 
-- [x] Add a top-level `LICENSE` file (MIT)
-- [x] Add issue templates (`new-cve`, `new-detection`, `new-playbook`, `tuning-request`)
-- [x] Add PR template
-- [x] Add `SECURITY.md`
-- [x] Add `CODEOWNERS`
-- [x] Add `.github/dependabot.yml`
-- [x] Add MITRE ATT&CK `COVERAGE.md`
-- [ ] Add badges to the root README once CI is green
-- [ ] Add `CODE_OF_CONDUCT.md`
-- [ ] Add Sigma syntax check + YARA syntax check to CI — [x] Sigma (`sigma-validate` job via pysigma); [ ] YARA
-- [ ] Add spell check (typos) to CI
-- [x] Add `detections/DATA_SOURCES.md` mapping rules → required telemetry — [`detections/DATA_SOURCES.md`](detections/DATA_SOURCES.md)
-- [ ] Add per-backend "how to deploy" guides (Sentinel analytic rule, Defender custom detection, Splunk savedsearches.conf)
+- [ ] T1059.001 — Atomic Red Team encoded PowerShell tests vs. the KQL rule
+- [ ] T1547.001 — Atomic Red Team Run-key tests vs. the new detection
+- [ ] T1078 — Entra valid-accounts
+- [ ] T1021.001 — RDP lateral movement
+- [ ] T1055 — process injection
+
+## Repo hygiene & infrastructure
+
+- [x] `LICENSE` (MIT)
+- [x] `SECURITY.md`
+- [x] `CODEOWNERS`
+- [x] `.github/dependabot.yml`
+- [x] PR + issue templates
+- [x] `COVERAGE.md` (MITRE ATT&CK matrix)
+- [x] `detections/DATA_SOURCES.md`
+- [x] Markdown + link CI
+- [x] Sigma validation CI (pysigma)
+- [ ] YARA validation CI
+- [ ] Spell check (typos) CI
+- [ ] `CODE_OF_CONDUCT.md`
+- [ ] Badges on root README (CI status, license, last release)
+- [ ] Per-backend "how to deploy" guides (Sentinel analytic rule / Defender custom detection / Splunk savedsearches.conf)
+
+## Automation (reminders)
+
+These exist but their schedules are commented out — they run manual-only.
+
+- [x] `daily-reminder.yml` — opens a GitHub issue with the day's lane
+- [x] `discord-reminder.yml` — Tier 2 Discord ping with live CISA KEV data on Mondays
+- [x] `daily-draft.yml` — Tier 3 agentic drafting (Mon CVE, Tue detection)
+- [ ] If/when you want auto-reminders again, uncomment the `schedule:` block in each file.
