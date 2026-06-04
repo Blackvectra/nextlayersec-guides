@@ -30,6 +30,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # Required by anthropics/claude-code-action@v1 — the action fetches an
+  # OIDC token before falling back to ANTHROPIC_API_KEY. Without this the
+  # action exits with "Could not fetch an OIDC token" before authentication.
+  id-token: write
 
 jobs:
   draft:
