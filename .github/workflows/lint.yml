@@ -33,6 +33,50 @@ jobs:
       - name: Validate Sigma rules
         run: python detections/sigma/validate_rules.py
 
+  yara-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install YARA
+        run: sudo apt-get update && sudo apt-get install -y yara
+      - name: Validate YARA rules
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          fail=0
+          for rule in detections/yara/*.yar detections/yara/*.yara; do
+            base=$(basename "$rule")
+            if [[ "$base" == _* ]]; then
+              echo "SKIP $rule (template)"
+              continue
+            fi
+            if yara --fail-on-warnings "$rule" /etc/hostname >/dev/null 2>yara_err.log; then
+              echo "OK   $rule"
+            else
+              echo "FAIL $rule:"; sed 's/^/  /' yara_err.log
+              fail=1
+            fi
+          done
+          # Templates: parse-only check so a broken template still fails CI
+          for rule in detections/yara/_*.yar detections/yara/_*.yara; do
+            if yara "$rule" /etc/hostname >/dev/null 2>yara_err.log; then
+              echo "OK   $rule (template parse)"
+            else
+              echo "FAIL $rule (template):"; sed 's/^/  /' yara_err.log
+              fail=1
+            fi
+          done
+          exit $fail
+
+  typos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Spell check
+        uses: crate-ci/typos@master
+        with:
+          config: ./.typos.toml
+
   linkcheck:
     runs-on: ubuntu-latest
     steps:

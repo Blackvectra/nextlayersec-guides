@@ -202,10 +202,10 @@ _No purple-team labs shipped yet._
 - [x] Markdown + link CI
 - [x] Sigma validation CI (pysigma)
 - [x] Auto-TODO sync workflow
-- [ ] YARA validation CI
-- [ ] Spell check (typos) CI
-- [ ] `CODE_OF_CONDUCT.md`
-- [ ] Badges on root README (CI status, license, last release)
+- [x] YARA validation CI
+- [x] Spell check (typos) CI
+- [x] `CODE_OF_CONDUCT.md`
+- [x] Badges on root README (CI status, license, last release)
 - [ ] Per-backend "how to deploy" guides (Sentinel analytic rule / Defender custom detection / Splunk savedsearches.conf)
 
 ---
