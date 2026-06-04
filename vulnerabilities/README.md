@@ -13,5 +13,6 @@ Each entry should include impact, detection guidance (link to a `detections/` ru
 | CVE | Product | KEV | Detection | Notes file |
 |-----|---------|-----|-----------|------------|
 | CVE-2025-50154 | _see file_ | ? | _todo_ | [CVE-2025-50154.md](CVE-2025-50154.md) |
+| CVE-2022-0492 | Linux Kernel (cgroups v1) | Yes (added 2026-06-02) | host-side file_event on `**/release_agent` writes; Falco built-in rule | [CVE-2022-0492.md](CVE-2022-0492.md) |
 
 Use [`template.md`](template.md) when adding a new CVE.

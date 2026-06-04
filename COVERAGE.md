@@ -19,11 +19,12 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Initial Access | T1566.001 Spearphishing Attachment | | | [phishing-email-triage](blue-team-playbooks/phishing-email-triage.md) | | |
 | Initial Access | T1566.002 Spearphishing Link | | | [phishing-email-triage](blue-team-playbooks/phishing-email-triage.md) | | |
 | Execution | T1059.001 PowerShell | | [KQL](detections/kql/T1059.001_powershell-encoded-command.md) · [Sigma](detections/sigma/T1059.001_powershell-encoded-command.md) | | [PowerShell attacks](detection-workflows/detection-workflow-powershell-attacks.md) | |
+| Command & Control | T1071.001 Web Protocols | | [KQL](detections/kql/T1071.001_beaconing-rare-https.md) · [Sigma](detections/sigma/T1071.001_beaconing-rare-https.md) | | | |
 | Persistence | T1547.001 Registry Run Keys | | [KQL](detections/kql/T1547.001_runkey-persistence.md) · [Sigma](detections/sigma/T1547.001_runkey-persistence.md) | | | |
 | Credential Access | T1003.001 LSASS Memory | | [KQL](detections/kql/T1003.001_lsass-access-suspicious.md) · [Sigma](detections/sigma/T1003.001_lsass-access-suspicious.md) | | | |
 | Credential Access | T1110.003 Password Spraying | | [KQL](detections/kql/T1110.003_entra-password-spray.md) · [Sigma](detections/sigma/T1110.003_entra-password-spray.md) | | | |
 | Defense Evasion / Persistence | _various_ | | | [incident-response-suspicious-network](blue-team-playbooks/incident-response-suspicious-network.md) | | |
-| Impact | T1486 Data Encrypted for Impact | | [KQL](detections/kql/T1486_mass-file-rename-ransomware.md) · [Sigma](detections/sigma/T1486_mass-file-rename-ransomware.md) | | | |
+| Impact | T1486 Data Encrypted for Impact | | [KQL](detections/kql/T1486_mass-file-rename-ransomware.md) · [Sigma](detections/sigma/T1486_mass-file-rename-ransomware.md) | [ransomware-outbreak](blue-team-playbooks/ransomware-outbreak.md) | | |
 
 ## Threat actors profiled
 
@@ -46,9 +47,9 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Discovery (TA0007) | 0 | 0 | 0 | 0 |
 | Lateral Movement (TA0008) | 0 | 0 | 0 | 0 |
 | Collection (TA0009) | 0 | 0 | 0 | 0 |
-| Command & Control (TA0011) | 0 | 0 | 0 | 0 |
+| Command & Control (TA0011) | 1 | 0 | 0 | 0 |
 | Exfiltration (TA0010) | 0 | 0 | 0 | 0 |
-| Impact (TA0040) | 1 | 0 | 0 | 0 |
+| Impact (TA0040) | 1 | 1 | 0 | 0 |
 
 ## Priority gaps
 

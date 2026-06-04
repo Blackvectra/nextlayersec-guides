@@ -1,0 +1,52 @@
+// Title: Beacon-like outbound HTTPS to rare destination
+// Technique: T1071.001 - Application Layer Protocol: Web Protocols
+// Data source(s): DeviceNetworkEvents (Defender XDR / MDE)
+// Author: nextlayersec
+// Last updated: 2026-06-02
+//
+// Description:
+//   Surfaces workstation hosts making sustained outbound HTTPS connections
+//   to a remote endpoint that is rare across the fleet (low device fan-in
+//   for the destination). Catches commodity C2 frameworks (Cobalt Strike
+//   default profiles, Sliver, Mythic), as well as bespoke loaders.
+//
+//   This is a rarity + persistence rule, not a signature match — tune the
+//   thresholds to your environment.
+
+let lookback = 1d;
+let minConnections = 30;             // sustained activity from one host
+let maxDevicesPerDestination = 3;    // rarity across the fleet
+let workstationModels = dynamic([]); // optional: restrict to laptops/desktops by model
+DeviceNetworkEvents
+| where Timestamp > ago(lookback)
+| where ActionType in ("ConnectionSuccess", "ConnectionAttempt")
+| where RemotePort == 443
+| where isnotempty(RemoteIP)
+| where not(ipv4_is_private(RemoteIP))                 // outbound only
+| where RemoteUrl !endswith ".microsoft.com"           // rough allowlist; tune
+        and RemoteUrl !endswith ".windows.com"
+        and RemoteUrl !endswith ".windowsupdate.com"
+        and RemoteUrl !endswith ".office.com"
+        and RemoteUrl !endswith ".office365.com"
+        and RemoteUrl !endswith ".live.com"
+        and RemoteUrl !endswith ".azure.com"
+        and RemoteUrl !endswith ".azureedge.net"
+        and RemoteUrl !endswith ".trafficmanager.net"
+| summarize ConnAttempts = count(),
+            FirstSeen   = min(Timestamp),
+            LastSeen    = max(Timestamp),
+            UniqueDevices = dcount(DeviceId),
+            DeviceSample  = make_set(DeviceName, 5),
+            ProcessSample = make_set(InitiatingProcessFileName, 5)
+            by RemoteUrl, RemoteIP
+| where UniqueDevices <= maxDevicesPerDestination
+| where ConnAttempts >= minConnections
+| extend DurationMin   = datetime_diff('minute', LastSeen, FirstSeen),
+         ConnPerMinute = ConnAttempts / iff(datetime_diff('minute', LastSeen, FirstSeen) == 0, 1, datetime_diff('minute', LastSeen, FirstSeen))
+// Sustained: at least 30 connections over at least 30 minutes (filters
+// brief one-shot downloads); regular: rate-per-minute > 0.5
+| where DurationMin >= 30 and ConnPerMinute >= 0.5
+| project FirstSeen, LastSeen, DurationMin, RemoteUrl, RemoteIP,
+          ConnAttempts, ConnPerMinute, UniqueDevices,
+          DeviceSample, ProcessSample
+| sort by ConnAttempts desc

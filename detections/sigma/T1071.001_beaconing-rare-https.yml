@@ -1,0 +1,74 @@
+title: Beacon-like outbound HTTPS to rare destination (base)
+name: outbound_https_connection
+id: fc7fc1cd-883a-4176-abbd-8cb0eea6deb6
+status: experimental
+description: >-
+  Base rule that matches successful outbound HTTPS connections (port 443)
+  from workstations to public destinations. On its own this is benign and
+  high-volume; it feeds the rarity / persistence correlation rule below.
+author: nextlayersec
+date: 2026/06/02
+references:
+  - https://attack.mitre.org/techniques/T1071/001/
+  - https://github.com/nextlayersec/nextlayersec-guides/blob/main/detections/kql/T1071.001_beaconing-rare-https.md
+tags:
+  - attack.command_and_control
+  - attack.t1071.001
+logsource:
+  product: zeek
+  service: http
+detection:
+  selection:
+    method:
+      - GET
+      - POST
+      - PUT
+    proto: tcp
+    id.resp_p: 443
+  filter_msft:
+    host|endswith:
+      - '.microsoft.com'
+      - '.windows.com'
+      - '.windowsupdate.com'
+      - '.office.com'
+      - '.office365.com'
+      - '.live.com'
+      - '.azure.com'
+      - '.azureedge.net'
+      - '.trafficmanager.net'
+  condition: selection and not filter_msft
+falsepositives:
+  - Niche SaaS used by a single power user
+  - Personal services on BYOD-tolerant networks
+  - Auto-updaters for non-Microsoft software
+level: low
+---
+title: Beacon-like outbound HTTPS to rare destination
+id: 9a8efc4f-83fa-4ed5-bca6-3afa3f0d5022
+status: experimental
+description: >-
+  Fires when a destination is contacted by very few devices across the
+  fleet AND a single source maintains a sustained connection rate over
+  time. The defining shape of an interactive C2 beacon.
+author: nextlayersec
+date: 2026/06/02
+references:
+  - https://attack.mitre.org/techniques/T1071/001/
+  - https://github.com/nextlayersec/nextlayersec-guides/blob/main/detections/kql/T1071.001_beaconing-rare-https.md
+tags:
+  - attack.command_and_control
+  - attack.t1071.001
+correlation:
+  type: event_count
+  rules:
+    - outbound_https_connection
+  group-by:
+    - id.orig_h
+    - host
+  timespan: 1h
+  condition:
+    gte: 30
+falsepositives:
+  - Sustained legitimate traffic to a niche destination — allowlist after triage
+  - Internal jump-host external integrations
+level: high
