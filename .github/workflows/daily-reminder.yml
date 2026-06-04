@@ -1,11 +1,9 @@
 name: Daily TODO reminder
 
-# Manual-dispatch only. Auto-schedule was disabled by user request; the cron
-# line below is kept commented so you can flip it back on without rewriting
-# the workflow. 13:00 UTC = 8 AM CDT / 7 AM CST.
+# Fires daily at 13:00 UTC = 8 AM CDT / 7 AM CST (no DST auto-adjust).
 on:
-  # schedule:
-  #   - cron: '0 13 * * *'
+  schedule:
+    - cron: '0 13 * * *'
   workflow_dispatch:
 
 permissions:

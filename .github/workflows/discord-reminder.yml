@@ -9,13 +9,11 @@ name: Discord daily reminder (Tier 2 — live data)
 # Requires repo secret: DISCORD_WEBHOOK_URL
 # (Server → Channel → Edit → Integrations → Webhooks → New Webhook → Copy URL)
 #
-# Manual-dispatch only. Auto-schedule was disabled by user request; the cron
-# below is kept commented so you can re-enable it without rewriting the file.
-# 13:00 UTC = 8 AM CDT / 7 AM CST.
+# Fires daily at 13:00 UTC = 8 AM CDT / 7 AM CST.
 
 on:
-  # schedule:
-  #   - cron: '0 13 * * *'
+  schedule:
+    - cron: '0 13 * * *'
   workflow_dispatch:
 
 permissions:

@@ -1,25 +1,29 @@
-name: Daily draft (Tier 3 — agentic)
+name: Daily draft (Tier 3 — agentic, all 7 days)
 
-# On CVE day (Mon) and Detection day (Tue), runs Claude Code headlessly to
-# DRAFT the day's content and open a DRAFT pull request for human review,
-# then pings Discord. You review/merge — nothing lands on main automatically.
+# Every day, runs Claude Code headlessly to DRAFT the day's content for the
+# matching lane and open a DRAFT pull request for you to review. Pings
+# Discord when done. Nothing lands on main automatically — drafts only.
+#
+# Lanes (US Central weekday):
+#   Mon → CVE write-up      Tue → KQL + Sigma detection
+#   Wed → IR playbook       Thu → Threat-intel note
+#   Fri → Tools/frameworks  Sat → Repo-hygiene fix
+#   Sun → Weekly review (CHANGELOG entry, re-prioritize TODO 🔥 Next up)
 #
 # Requires repo secrets:
 #   ANTHROPIC_API_KEY   — for the Claude Code action
 #   DISCORD_WEBHOOK_URL — for the completion ping (optional)
 #
-# Fires 13:30 UTC Mon & Tue (just after the reminder). Trigger manually any
-# time via "Run workflow" and optionally force a lane.
+# Fires 13:30 UTC daily. Trigger manually via "Run workflow" any time, and
+# optionally force a lane via the input.
 
-# Manual-dispatch only. Auto-schedule was disabled by user request; the cron
-# below is kept commented so you can re-enable it later.
 on:
-  # schedule:
-  #   - cron: '30 13 * * 1,2'
+  schedule:
+    - cron: '30 13 * * *'
   workflow_dispatch:
     inputs:
       lane:
-        description: 'Force lane: cve or detection (blank = auto by weekday)'
+        description: 'Force lane (cve | detection | playbook | threat-intel | tools | cleanup | review). Blank = auto by weekday.'
         required: false
         default: ''
 
@@ -42,82 +46,141 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "${LANE_INPUT:-}" ]; then
-            echo "lane=${LANE_INPUT}" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "lane=${LANE_INPUT}" >> "$GITHUB_OUTPUT"; exit 0
           fi
           case "$(TZ=America/Chicago date +%u)" in
             1) echo "lane=cve" >> "$GITHUB_OUTPUT" ;;
             2) echo "lane=detection" >> "$GITHUB_OUTPUT" ;;
-            *) echo "lane=none" >> "$GITHUB_OUTPUT" ;;
+            3) echo "lane=playbook" >> "$GITHUB_OUTPUT" ;;
+            4) echo "lane=threat-intel" >> "$GITHUB_OUTPUT" ;;
+            5) echo "lane=tools" >> "$GITHUB_OUTPUT" ;;
+            6) echo "lane=cleanup" >> "$GITHUB_OUTPUT" ;;
+            7) echo "lane=review" >> "$GITHUB_OUTPUT" ;;
           esac
 
       - name: Configure git
-        if: steps.prep.outputs.lane != 'none'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Draft CVE write-up
+      # -------- Common preamble for all prompts --------
+      # Each lane's prompt MUST follow these rules:
+      # - Never fabricate facts (CVSS scores, KB numbers, vendor specifics).
+      #   Mark anything unverified as "TBD — verify" and list it in the PR body.
+      # - Create a new branch `auto/<lane>-<short-slug>` and a DRAFT PR.
+      # - Run `npx --yes markdownlint-cli2 "**/*.md"` and fix anything new it flags.
+      # - If the lane adds content under detections/, run `python scripts/sync-todo.py`.
+      # - Don't modify existing published files unless the task specifically
+      #   says to (the only "edits-allowed" lanes are tools, cleanup, review).
+
+      - name: Lane — Monday CVE
         if: steps.prep.outputs.lane == 'cve'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: "--max-turns 25 --model claude-sonnet-4-6 --permission-mode acceptEdits"
           prompt: |
-            You are drafting a new CVE write-up for NextLayerSec Guides, a defensive
-            security documentation repo. Accuracy matters more than completeness —
-            NEVER fabricate CVSS scores, KB numbers, or technical details. Mark
-            anything you cannot verify as "TBD — verify".
+            Draft a new CVE write-up.
+            1. curl https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+            2. Pick the most recently added CVE that does NOT already have a file in vulnerabilities/.
+            3. Create vulnerabilities/CVE-YYYY-NNNNN.md following vulnerabilities/template.md (summary, impact, remediation, framework mapping, detection guidance, references). Only public facts; mark unverified as "TBD — verify".
+            4. Run python scripts/sync-todo.py (it will tick the CVE section automatically).
+            5. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            6. Branch auto/cve-<cveid>; commit; open a DRAFT PR titled "Draft: CVE write-up <CVE-ID>". In the body list every "TBD — verify" field for me to check.
 
-            Steps:
-            1. Use Bash + curl to fetch the CISA KEV catalog:
-               curl -fsSL https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
-            2. Pick the most recently added CVE that does NOT already have a file in
-               vulnerabilities/ (existing files: vulnerabilities/CVE-YYYY-NNNNN.md).
-            3. Create vulnerabilities/CVE-YYYY-NNNNN.md following the structure of
-               vulnerabilities/template.md. Fill in summary, impact, remediation,
-               framework mapping (MITRE ATT&CK / NIST CSF / ISO 27001 / CIS Controls),
-               detection guidance, and references. Base everything on the KEV entry
-               fields and widely-known public facts only.
-            4. Add an index row to vulnerabilities/README.md and a bullet under the
-               [Unreleased] section of CHANGELOG.md.
-            5. Run: npx --yes markdownlint-cli2 "**/*.md" and fix any errors you introduced.
-            6. Create a new branch named auto/cve-<lowercased-cveid>, commit with a clear
-               message, and open a DRAFT pull request titled "Draft: CVE write-up <CVE-ID>".
-               In the PR body, summarize what you filled in and explicitly list every field
-               you marked "TBD — verify" so a human knows what to check.
-
-      - name: Draft detection
+      - name: Lane — Tuesday Detection
         if: steps.prep.outputs.lane == 'detection'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 25 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          claude_args: "--max-turns 30 --model claude-sonnet-4-6 --permission-mode acceptEdits"
           prompt: |
-            You are drafting a new KQL detection for NextLayerSec Guides, a defensive
-            security documentation repo. Accuracy matters — the query must be valid KQL
-            and the logic must be defensible. If unsure about a table/field name, note it.
+            Draft a new detection (KQL + Sigma) for an uncovered ATT&CK technique.
+            1. Read COVERAGE.md and TODO.md's "Detection backlog (manual)" section. Pick the highest-priority technique that does NOT already have a file in detections/kql/.
+            2. Author detections/kql/T<id>_<slug>.kql + .md, following the existing files (T1547.001 is the most recent template).
+            3. Author detections/sigma/T<id>_<slug>.yml + .md. Use real UUID. Run python detections/sigma/validate_rules.py and fix any pysigma error.
+            4. Add a row to COVERAGE.md (Persistence/Lateral Movement/etc tactic) and bump the per-tactic count.
+            5. Run python scripts/sync-todo.py.
+            6. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            7. Branch auto/detection-t<id>; commit; open a DRAFT PR titled "Draft: detection T<id> — <name>". Body: explain logic and call out any thresholds / table-name assumptions to verify.
 
-            Steps:
-            1. Read COVERAGE.md and pick one uncovered, high-priority ATT&CK technique
-               from the "Priority gaps" section that does NOT already have a file in
-               detections/kql/.
-            2. Using detections/kql/_template.kql and _template.md as the pattern, create:
-               - detections/kql/T<id>_<short-name>.kql  (a runnable Defender XDR / Sentinel query)
-               - detections/kql/T<id>_<short-name>.md    (intent, ATT&CK mapping, data sources,
-                 false positives, tuning, response, references)
-               Set status: testing.
-            3. Add a row to detections/kql/README.md, add the technique to COVERAGE.md
-               (both the coverage table and the per-tactic count), and add a CHANGELOG.md
-               [Unreleased] bullet.
-            4. Run: npx --yes markdownlint-cli2 "**/*.md" and fix any errors you introduced.
-            5. Create a new branch named auto/detection-t<id>, commit with a clear message,
-               and open a DRAFT pull request titled "Draft: KQL detection T<id> — <name>".
-               In the PR body, describe the detection logic and call out anything a human
-               should validate (table/field names, thresholds, FP assumptions).
+      - name: Lane — Wednesday Playbook
+        if: steps.prep.outputs.lane == 'playbook'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 30 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Draft a new IR playbook from TODO.md's "Playbooks → Backlog (manual)" list. Pick the top untouched one (start with Ransomware outbreak unless already shipped).
+            1. Author blue-team-playbooks/<scenario>.md using blue-team-playbooks/_template.md as structure (trigger / scope / triage / containment / eradication / recovery / lessons learned / framework mapping / references).
+            2. Cross-link to relevant detections in detections/ if applicable.
+            3. Run python scripts/sync-todo.py.
+            4. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            5. Branch auto/playbook-<slug>; commit; open a DRAFT PR titled "Draft: playbook — <scenario>". Body summarizes the trigger and the containment-now decisions.
+
+      - name: Lane — Thursday Threat intel
+        if: steps.prep.outputs.lane == 'threat-intel'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 30 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Draft a threat-intel note. Decide which sub-area is least covered (actors / campaigns / ttps) by inspecting threat-intelligence/. Default order if all equal: TTP roundup first (AiTM phishing kits, OAuth consent phishing, AS-REP roasting, MFA fatigue), then a second actor profile (Lazarus, FIN7, Konni), then a campaign.
+            1. Use the matching _template.md in threat-intelligence/<area>/.
+            2. Cite primary sources (CISA, NCSC, Microsoft, Mandiant, Google TAG). Mark anything you cannot verify "TBD — verify".
+            3. Cross-link to relevant detections.
+            4. Run python scripts/sync-todo.py.
+            5. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            6. Branch auto/threat-intel-<slug>; commit; open a DRAFT PR titled "Draft: threat intel — <name>". Body lists "TBD — verify" items.
+
+      - name: Lane — Friday Tools/frameworks
+        if: steps.prep.outputs.lane == 'tools'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 20 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Improve tools/blue-team-tools.md OR one frameworks/*.md page.
+            Strategy: pick whichever has the smallest "next concrete improvement". Either add 3–6 new high-quality tool entries with brief one-line descriptions and links, or deepen a framework page with a "How to use in a SOC" subsection.
+            1. Make the edit additively (do not delete existing entries unless they're dead links).
+            2. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            3. Branch auto/tools-<date>; commit; open a DRAFT PR titled "Draft: tools/frameworks update — <topic>".
+
+      - name: Lane — Saturday Cleanup
+        if: steps.prep.outputs.lane == 'cleanup'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 20 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Repo-hygiene day. Look at TODO.md "Repo hygiene & infrastructure (manual)" and pick the top unchecked item that's small. Examples in order:
+              - Add `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1).
+              - Add `typos` spell-check CI job (crate-ci/typos GH action).
+              - Add CI status / license badges to README.
+              - Add a YARA syntax-check CI job (yara binary, validate _template.yar).
+            Implement ONE such item (the smallest), end-to-end:
+            1. Add the file(s) / CI changes.
+            2. Update README / TODO if needed (TODO is auto-synced; only update the manual hygiene section).
+            3. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            4. Branch auto/cleanup-<slug>; commit; open a DRAFT PR titled "Draft: cleanup — <item>".
+
+      - name: Lane — Sunday Weekly review
+        if: steps.prep.outputs.lane == 'review'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 20 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            Weekly review.
+            1. Look at merged PRs from the last 7 days (use git log --since="7 days ago" --merges and git log --since="7 days ago" --oneline).
+            2. Append a dated "Week of YYYY-MM-DD" subsection under CHANGELOG.md "[Unreleased]" summarizing the week's shipped work in 5–10 bullets.
+            3. Re-evaluate TODO.md "🔥 Next up (manual — order by what you want to ship)" — keep it to 5 items, removing anything that shipped this week, adding the next highest-leverage items from the manual backlogs below it.
+            4. Run python scripts/sync-todo.py.
+            5. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            6. Branch auto/review-<date>; commit; open a DRAFT PR titled "Draft: weekly review — week of YYYY-MM-DD". Body: paste the new CHANGELOG bullets.
 
       - name: Notify Discord
-        if: always() && steps.prep.outputs.lane != 'none'
+        if: always()
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           REPO: ${{ github.repository }}
@@ -126,8 +189,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
-            echo "::warning::DISCORD_WEBHOOK_URL not set — skipping Discord ping."
-            exit 0
+            echo "::warning::DISCORD_WEBHOOK_URL not set — skipping Discord ping."; exit 0
           fi
           if [ "$STATUS" = "success" ]; then
             EMOJI="✅"; COLOR=3066993
