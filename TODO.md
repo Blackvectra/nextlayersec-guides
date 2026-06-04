@@ -21,7 +21,7 @@ The sync runs:
 | Detection workflows | 1 |
 | CVE write-ups | 2 |
 | Threat actors profiled | 1 |
-| Threat-intel campaigns | 0 |
+| Threat-intel campaigns | 1 |
 | Threat-intel TTP roundups | 1 |
 | Purple-team labs | 0 |
 
@@ -151,7 +151,7 @@ Priority order — top is highest demand for SOC readers.
 
 <!-- BEGIN AUTO: campaigns -->
 
-_No campaign write-ups shipped yet._
+- [x] [Campaign: Scattered Spider — 2023 Hospitality Sector Breaches](threat-intelligence/campaigns/scattered-spider-casino-2023.md)
 
 <!-- END AUTO: campaigns -->
 
