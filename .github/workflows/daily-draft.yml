@@ -1,0 +1,144 @@
+name: Daily draft (Tier 3 — agentic)
+
+# On CVE day (Mon) and Detection day (Tue), runs Claude Code headlessly to
+# DRAFT the day's content and open a DRAFT pull request for human review,
+# then pings Discord. You review/merge — nothing lands on main automatically.
+#
+# Requires repo secrets:
+#   ANTHROPIC_API_KEY   — for the Claude Code action
+#   DISCORD_WEBHOOK_URL — for the completion ping (optional)
+#
+# Fires 13:30 UTC Mon & Tue (just after the reminder). Trigger manually any
+# time via "Run workflow" and optionally force a lane.
+
+on:
+  schedule:
+    - cron: '30 13 * * 1,2'
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: 'Force lane: cve or detection (blank = auto by weekday)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine lane
+        id: prep
+        env:
+          LANE_INPUT: ${{ github.event.inputs.lane }}
+        run: |
+          set -euo pipefail
+          if [ -n "${LANE_INPUT:-}" ]; then
+            echo "lane=${LANE_INPUT}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$(TZ=America/Chicago date +%u)" in
+            1) echo "lane=cve" >> "$GITHUB_OUTPUT" ;;
+            2) echo "lane=detection" >> "$GITHUB_OUTPUT" ;;
+            *) echo "lane=none" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Configure git
+        if: steps.prep.outputs.lane != 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Draft CVE write-up
+        if: steps.prep.outputs.lane == 'cve'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 25 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            You are drafting a new CVE write-up for NextLayerSec Guides, a defensive
+            security documentation repo. Accuracy matters more than completeness —
+            NEVER fabricate CVSS scores, KB numbers, or technical details. Mark
+            anything you cannot verify as "TBD — verify".
+
+            Steps:
+            1. Use Bash + curl to fetch the CISA KEV catalog:
+               curl -fsSL https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+            2. Pick the most recently added CVE that does NOT already have a file in
+               vulnerabilities/ (existing files: vulnerabilities/CVE-YYYY-NNNNN.md).
+            3. Create vulnerabilities/CVE-YYYY-NNNNN.md following the structure of
+               vulnerabilities/template.md. Fill in summary, impact, remediation,
+               framework mapping (MITRE ATT&CK / NIST CSF / ISO 27001 / CIS Controls),
+               detection guidance, and references. Base everything on the KEV entry
+               fields and widely-known public facts only.
+            4. Add an index row to vulnerabilities/README.md and a bullet under the
+               [Unreleased] section of CHANGELOG.md.
+            5. Run: npx --yes markdownlint-cli2 "**/*.md" and fix any errors you introduced.
+            6. Create a new branch named auto/cve-<lowercased-cveid>, commit with a clear
+               message, and open a DRAFT pull request titled "Draft: CVE write-up <CVE-ID>".
+               In the PR body, summarize what you filled in and explicitly list every field
+               you marked "TBD — verify" so a human knows what to check.
+
+      - name: Draft detection
+        if: steps.prep.outputs.lane == 'detection'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 25 --model claude-sonnet-4-6 --permission-mode acceptEdits"
+          prompt: |
+            You are drafting a new KQL detection for NextLayerSec Guides, a defensive
+            security documentation repo. Accuracy matters — the query must be valid KQL
+            and the logic must be defensible. If unsure about a table/field name, note it.
+
+            Steps:
+            1. Read COVERAGE.md and pick one uncovered, high-priority ATT&CK technique
+               from the "Priority gaps" section that does NOT already have a file in
+               detections/kql/.
+            2. Using detections/kql/_template.kql and _template.md as the pattern, create:
+               - detections/kql/T<id>_<short-name>.kql  (a runnable Defender XDR / Sentinel query)
+               - detections/kql/T<id>_<short-name>.md    (intent, ATT&CK mapping, data sources,
+                 false positives, tuning, response, references)
+               Set status: testing.
+            3. Add a row to detections/kql/README.md, add the technique to COVERAGE.md
+               (both the coverage table and the per-tactic count), and add a CHANGELOG.md
+               [Unreleased] bullet.
+            4. Run: npx --yes markdownlint-cli2 "**/*.md" and fix any errors you introduced.
+            5. Create a new branch named auto/detection-t<id>, commit with a clear message,
+               and open a DRAFT pull request titled "Draft: KQL detection T<id> — <name>".
+               In the PR body, describe the detection logic and call out anything a human
+               should validate (table/field names, thresholds, FP assumptions).
+
+      - name: Notify Discord
+        if: always() && steps.prep.outputs.lane != 'none'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+          LANE: ${{ steps.prep.outputs.lane }}
+          STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
+            echo "::warning::DISCORD_WEBHOOK_URL not set — skipping Discord ping."
+            exit 0
+          fi
+          if [ "$STATUS" = "success" ]; then
+            EMOJI="✅"; COLOR=3066993
+            MSG="Drafted a **${LANE}** entry and opened a draft PR for review."
+          else
+            EMOJI="⚠️"; COLOR=15548997
+            MSG="The **${LANE}** drafting run finished with status **${STATUS}** — check the Actions log."
+          fi
+          PAYLOAD=$(jq -n \
+            --arg title "$EMOJI Daily draft — $LANE" \
+            --arg desc "$MSG" \
+            --argjson color "$COLOR" \
+            --arg url "https://github.com/${REPO}/pulls?q=is%3Apr+is%3Aopen+is%3Adraft" \
+            '{username:"NextLayerSec", embeds:[{title:$title, description:$desc, color:$color, url:$url}]}')
+          curl -fsSL --max-time 30 -X POST -H "Content-Type: application/json" \
+            -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"
