@@ -4,6 +4,10 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Changed (CVE selection bias)
+- CVE selection now prioritizes the Windows / MSP environment in this order: (1) Microsoft Windows ecosystem; (2) edge/identity/virtualization gear deployed alongside Windows fleets (Fortinet, Cisco, Palo Alto, Citrix, Ivanti, VMware, F5, Atlassian, MOVEit, ConnectWise, Veeam, Kaseya, SolarWinds); (3) CISA KEV entries with public PoC / ITW exploitation; (4) other only as fallback.
+- `vulnerabilities/README.md`, `CONTRIBUTING.md`, and the Mon CVE prompt in `.github/workflows/daily-draft.yml` updated to encode the same priority.
+
 ### Added (eighth batch — Mon CVE + Tue detection + Wed playbook)
 - **Mon CVE:** `vulnerabilities/CVE-2022-0492.md` — Linux kernel cgroups v1 `release_agent` container escape. CISA KEV (added 2026-06-02). Includes remediation (patch / drop `CAP_SYS_ADMIN` / cgroups v2 / userns), detection guidance (auditd + Falco), and full framework mapping (ATT&CK T1611/T1068/T1610, NIST CSF 2.0, ISO 27001, CIS).
 - **Tue detection:** KQL + Sigma rule `T1071.001_beaconing-rare-https` — sustained outbound HTTPS to fleet-rare destinations (C2 beacon shape). Fills the **Command & Control** tactic gap in COVERAGE.md. Sigma is a base-rule + `event_count` correlation; documented SIEM-side rarity-aggregation note for backends without native cardinality conditions.
