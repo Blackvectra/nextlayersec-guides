@@ -24,6 +24,16 @@ extend-ignore-re = [
     "\\bgoogie\\b",
     # Windows CLI format-output flag (`schtasks /fo csv`, `wevtutil /fo xml`).
     "(?:^|\\s)/fo\\b",
+    # Security / industry acronyms that the spell-checker mis-parses as
+    # mistyped English words. SIEMs (typos sub-word-parses to "SIE"),
+    # OT (Operational Technology — flagged as TO/OF), SEO (proactive),
+    # SCCM, SCEP, OCSP all fit the same pattern.
+    "\\bSIEMs?\\b",
+    "\\bOT\\b",
+    "\\bSEO\\b",
+    "\\bSCCM\\b",
+    "\\bSCEP\\b",
+    "\\bOCSP\\b",
 ]
 
 [default.extend-words]
