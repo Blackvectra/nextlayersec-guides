@@ -38,6 +38,17 @@ Identity is the new perimeter — most ransomware affiliates today (including [S
 - **Sysinternals Suite** — Process Explorer, Autoruns, TCPView, Procmon: https://learn.microsoft.com/en-us/sysinternals/
 - **Sigma → SIEM converter** (`sigma-cli`) — port the rules in `detections/sigma/` to your backend: https://github.com/SigmaHQ/sigma-cli
 
+## Log Analysis & Timeline
+
+Windows DFIR lives and dies by timeline quality. These tools turn raw artifacts into sorted, searchable event sequences.
+
+- **Eric Zimmerman's Tools** — MFTECmd, PECmd, RECmd, EvtxECmd, Timeline Explorer; the gold standard for Windows artifact parsing: https://ericzimmerman.github.io/
+- **Hayabusa** — fast Windows event-log threat hunting and SIGMA-based timeline generation: https://github.com/Yamato-Security/hayabusa
+- **Chainsaw** — rapid Windows event-log triage with built-in SIGMA/built-in detection rules: https://github.com/WithSecureLabs/chainsaw
+- **Plaso / log2timeline** — multi-source super-timeline builder (Windows, macOS, Linux artifacts): https://github.com/log2timeline/plaso
+- **RITA (Real Intelligence Threat Analytics)** — detects C2 beacons and long-connection patterns in Zeek/Bro logs: https://github.com/activecm/rita
+- **Zeek** — network security monitoring framework; produces structured protocol logs consumed by RITA and SIEMs: https://zeek.org/
+
 ## Threat Intel Feeds & Lookups
 
 - **AbuseIPDB** — IP reputation: https://www.abuseipdb.com/
