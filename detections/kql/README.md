@@ -18,6 +18,7 @@ See [`_template.md`](_template.md) and [`_template.kql`](_template.kql).
 | Technique | File | Status | Description |
 |-----------|------|--------|-------------|
 | T1003.001 | [`T1003.001_lsass-access-suspicious`](T1003.001_lsass-access-suspicious.md) | testing | Non-Microsoft process opens LSASS with credential-dump-capable rights |
+| T1566.001 | [`T1566.001_attachment-link-credential-harvester`](T1566.001_attachment-link-credential-harvester.md) | testing | Delivered inbound mail: attachment + link to credential harvester on abused free hosting + weak auth |
 | T1059.001 | [`T1059.001_powershell-encoded-command`](T1059.001_powershell-encoded-command.md) | testing | PowerShell `-EncodedCommand` / `FromBase64String` |
 | T1110.003 | [`T1110.003_entra-password-spray`](T1110.003_entra-password-spray.md) | testing | Single IP fails sign-ins against many Entra users |
 | T1486 | [`T1486_mass-file-rename-ransomware`](T1486_mass-file-rename-ransomware.md) | testing | Process renames many files across directories — ransomware canary |

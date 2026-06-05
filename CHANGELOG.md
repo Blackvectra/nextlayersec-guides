@@ -4,6 +4,13 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (T1566.001 attachment-phish detection)
+- **Detection: T1566.001 — Delivered phish: attachment + credential-harvester link on abused hosting** (KQL + Sigma). Catches the attachment-borne credential phish that bypassed filtering: a delivered inbound email carrying an attachment plus an embedded link to a harvester on abused free / trusted-SaaS hosting (Google Sites, Firebase, Azure Blob, `*.pages.dev`, …), weighted by weak / best-guess sender auth (`SPF=none`, `DMARC=bestguesspass`). The KQL joins `EmailEvents` + `EmailUrlInfo` + `EmailAttachmentInfo` and ships a `UrlClickEvents` clicker check; the Sigma version is a multi-doc `temporal` correlation over `m365_delivered_inbound_with_attachment` and `m365_email_url_abused_hosting`. Fills the T1566.001 detection gap (previously playbook-only).
+- **`.typos.toml`** — allowlisted `TABL` (Microsoft Tenant Allow/Block List) so anti-phishing content doesn't trip the spell-checker.
+
+### Coverage (T1566.001 attachment-phish)
+- `COVERAGE.md` updates: Initial Access detection count `1 → 2`; T1566.001 row now links the KQL + Sigma detections.
+
 ### Added (content + Discord-TODO-notify batch)
 - **Detection: T1078.004 — Risky Entra sign-in followed by mailbox-rule mutation** (KQL + Sigma). Highest-fidelity post-AiTM cookie-replay signal. Cross-source join on `SigninLogs` + `OfficeActivity` over a 10-minute window. The Sigma version uses a multi-doc `temporal` correlation across `entra_risky_successful_signin` and `entra_inbox_rule_mutation`. Closes the top item in 🔥 Next up and the direct follow-on detection called out by the AiTM phishing-kits TTP roundup.
 - **`.github/workflows/discord-todo-update.yml`** — fires on pushes to `main` that touch `TODO.md`, diffs newly-ticked / newly-added / re-opened items, and posts a single Discord embed with overall progress (`X/Y items done · NN%`). Uses the same `DISCORD_WEBHOOK_URL` secret as the existing daily reminders; warns and exits 0 if unset. Skips silently when only whitespace / auto-counts changed.

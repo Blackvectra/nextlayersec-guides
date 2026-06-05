@@ -33,6 +33,7 @@ nd  = "nd"           # used as abbreviation in tables
 ba  = "ba"           # appears in encoded strings / examples
 te  = "te"           # appears as TE acronym
 hsa = "hsa"          # appears in HSA acronym contexts
+TABL = "TABL"        # Microsoft Tenant Allow/Block List (anti-phishing content)
 
 [default.extend-identifiers]
 # Function / variable names that the spell-checker should leave alone.

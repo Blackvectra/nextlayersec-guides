@@ -16,7 +16,7 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Tactic | Technique | Sub-technique | 🛡 | 📕 | 🔍 | 🧪 |
 |--------|-----------|---------------|----|----|----|----|
 | Initial Access | T1566 Phishing | — | | [phishing-email-triage](blue-team-playbooks/phishing-email-triage.md) | | |
-| Initial Access | T1566.001 Spearphishing Attachment | | | [phishing-email-triage](blue-team-playbooks/phishing-email-triage.md) | | |
+| Initial Access | T1566.001 Spearphishing Attachment | | [KQL](detections/kql/T1566.001_attachment-link-credential-harvester.md) · [Sigma](detections/sigma/T1566.001_attachment-link-credential-harvester.md) | [phishing-email-triage](blue-team-playbooks/phishing-email-triage.md) | | |
 | Initial Access | T1566.002 Spearphishing Link | | | [phishing-email-triage](blue-team-playbooks/phishing-email-triage.md) | | |
 | Execution | T1059.001 PowerShell | | [KQL](detections/kql/T1059.001_powershell-encoded-command.md) · [Sigma](detections/sigma/T1059.001_powershell-encoded-command.md) | | [PowerShell attacks](detection-workflows/detection-workflow-powershell-attacks.md) | |
 | Command & Control | T1071.001 Web Protocols | | [KQL](detections/kql/T1071.001_beaconing-rare-https.md) · [Sigma](detections/sigma/T1071.001_beaconing-rare-https.md) | | | |
@@ -39,7 +39,7 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 |--------|------------|-----------|-----------|------|
 | Reconnaissance (TA0043) | 0 | 0 | 0 | 0 |
 | Resource Development (TA0042) | 0 | 0 | 0 | 0 |
-| Initial Access (TA0001) | 1 | 1 | 0 | 0 |
+| Initial Access (TA0001) | 2 | 1 | 0 | 0 |
 | Execution (TA0002) | 1 | 0 | 1 | 0 |
 | Persistence (TA0003) | 1 | 0 | 0 | 0 |
 | Privilege Escalation (TA0004) | 0 | 0 | 0 | 0 |
