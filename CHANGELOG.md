@@ -4,6 +4,9 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Changed (Friday tools/frameworks lane)
+- **`frameworks/nist-csf.md` deepened to CSF 2.0** — updated from CSF 1.1 ("5 functions") to CSF 2.0 (6 functions, **Govern** added as the new top-level Function). Now includes: a CSF 1.1 → 2.0 changelog section; a "how to use this in a SOC / MSP engagement" walkthrough (Week 1 kickoff, Week 2–4 roadmap, ongoing operationalization with weekly / quarterly / annual cadence); a full crosswalk of every section of this repo to specific CSF 2.0 Subcategories (`GV.OC`, `ID.AM`, `PR.AA`, `DE.CM`, `RS.MA`, `RC.RP`, etc.); a worked example tracking a phishing incident through all six Functions with the Subcategory tags, the action taken, and the repo file that documents it; a "Common CSF mistakes" section based on field experience; updated references including the CSF Reference Tool and CIS Controls v8.1 → CSF 2.0 crosswalk.
+
 ### Added (T1566.001 attachment-phish detection)
 - **Detection: T1566.001 — Delivered phish: attachment + credential-harvester link on abused hosting** (KQL + Sigma). Catches the attachment-borne credential phish that bypassed filtering: a delivered inbound email carrying an attachment plus an embedded link to a harvester on abused free / trusted-SaaS hosting (Google Sites, Firebase, Azure Blob, `*.pages.dev`, …), weighted by weak / best-guess sender auth (`SPF=none`, `DMARC=bestguesspass`). The KQL joins `EmailEvents` + `EmailUrlInfo` + `EmailAttachmentInfo` and ships a `UrlClickEvents` clicker check; the Sigma version is a multi-doc `temporal` correlation over `m365_delivered_inbound_with_attachment` and `m365_email_url_abused_hosting`. Fills the T1566.001 detection gap (previously playbook-only).
 - **`.typos.toml`** — allowlisted `TABL` (Microsoft Tenant Allow/Block List) so anti-phishing content doesn't trip the spell-checker.
