@@ -30,6 +30,8 @@ jobs:
           disable-sudo: true
 
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Build and post reminder
         env:
