@@ -12,7 +12,15 @@ jobs:
   markdownlint:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: DavidAnson/markdownlint-cli2-action@v23
         with:
           globs: |
@@ -22,7 +30,15 @@ jobs:
   sigma-validate:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -36,7 +52,15 @@ jobs:
   yara-validate:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Install YARA
         run: sudo apt-get update && sudo apt-get install -y yara
       - name: Validate YARA rules
@@ -71,7 +95,15 @@ jobs:
   typos:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Spell check
         # Pinned to v1 (latest released v1.x). DO NOT use @master — that's a
         # moving target that runs any commit pushed to the branch tip.
@@ -82,7 +114,15 @@ jobs:
   linkcheck:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Link check
         uses: lycheeverse/lychee-action@v2
         with:
@@ -106,7 +146,15 @@ jobs:
       contents: read
       security-events: write   # upload SARIF
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -114,12 +162,13 @@ jobs:
         run: pip install "zizmor>=1.0,<2"
       - name: Run zizmor
         run: |
-          # Audit-only on the workflow files. Output SARIF for code-scanning
-          # plus plain text in the CI log. We do NOT fail the build on
-          # informational findings yet — once findings are reviewed, switch
-          # to --min-severity=medium or remove --no-error-on-findings.
-          zizmor --format sarif .github/workflows/ > zizmor.sarif || true
-          zizmor --format plain --pedantic --no-online-audits .github/workflows/ || true
+          # Triaged audit. Config in .github/zizmor.yml suppresses tag-pin
+          # noise (tracked separately by the SHA-pin TODO item) and the
+          # GitHub-managed codeql.yml file. Build fails on medium+ findings.
+          # SARIF still uploaded so all findings (including suppressed
+          # low-severity informationals) appear in code-scanning.
+          zizmor --config .github/zizmor.yml --format sarif .github/workflows/ > zizmor.sarif || true
+          zizmor --config .github/zizmor.yml --min-severity=medium --format plain --no-online-audits .github/workflows/
       - name: Upload SARIF
         if: always()
         uses: github/codeql-action/upload-sarif@v3
@@ -136,7 +185,15 @@ jobs:
       contents: read
       pull-requests: write    # post the summary comment
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/dependency-review-action@v4
         with:
           comment-summary-in-pr: on-failure

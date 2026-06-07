@@ -196,8 +196,8 @@ _No purple-team labs shipped yet._
 
 - [ ] **SHA-pin all third-party Actions** — replace tag pins with SHA + tag comment for `DavidAnson/markdownlint-cli2-action`, `lycheeverse/lychee-action`, `crate-ci/typos`, `anthropics/claude-code-action`, `step-security/harden-runner`, `ossf/scorecard-action`, `actions/dependency-review-action`. Dependabot (already enabled) will keep them current.
 - [ ] **Promote `harden-runner` from `audit` to `block` mode** in `daily-draft.yml`, `todo-sync.yml`, `daily-reminder.yml`, `discord-reminder.yml` once 1 week of audit-mode runs has produced a stable allowed-endpoints list.
-- [ ] **Add `harden-runner` to `lint.yml` and `scorecard.yml`** jobs.
-- [ ] **Triage and fix `zizmor` findings**, then tighten its CI step to `--min-severity=medium` (currently runs but doesn't fail the build).
+- [x] **Add `harden-runner` to `lint.yml` and `scorecard.yml`** jobs.
+- [x] **Triage and fix `zizmor` findings**, tighten CI to `--min-severity=medium`. Config at `.github/zizmor.yml` suppresses tag-pin noise (tracked by the SHA-pin item above) and the GitHub-managed `codeql.yml`. All medium+ findings fixed (added `persist-credentials: false` on read-only workflows).
 - [x] `LICENSE` (MIT)
 - [x] `SECURITY.md`
 - [x] `CODEOWNERS`
