@@ -27,6 +27,7 @@ Cross-link generously.
 
 | Platform / service | File | Status |
 |---|---|---|
+| **🔒 NextLayerSec non-negotiable baseline** | [`nextlayersec-baseline.md`](nextlayersec-baseline.md) | **published — enforced on every client tenant** |
 | Microsoft Entra ID — Conditional Access reference | [`entra-id.md`](entra-id.md) | published (initial) |
 | Windows endpoint — ASR / WDAC / Credential Guard / BitLocker | [`windows-endpoint.md`](windows-endpoint.md) | published (initial) |
 | Microsoft 365 — anti-phishing + impersonation | _todo_ | planned |
