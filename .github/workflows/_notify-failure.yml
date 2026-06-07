@@ -1,0 +1,108 @@
+# Reusable workflow: post a Discord embed when the calling workflow fails.
+#
+# Why this exists: every CI job in the repo fails silently from a Discord
+# perspective. The daily-draft workflow has its own Discord notify step
+# baked in, but lint / scorecard / codeql / gitleaks / osv-scan / etc. all
+# fail to email-only, which gets buried. With a public-facing repo (star
+# counts on it), a silent CI failure is a real operational gap.
+#
+# Usage from a calling workflow:
+#
+#     jobs:
+#       my-job:
+#         ...
+#
+#       notify-on-failure:
+#         needs: my-job
+#         if: failure() && github.event_name != 'pull_request'
+#         uses: ./.github/workflows/_notify-failure.yml
+#         with:
+#           workflow: ${{ github.workflow }}
+#           job: my-job
+#         secrets:
+#           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+#
+# Notes:
+#   - The `if: failure() && github.event_name != 'pull_request'` guard
+#     keeps PR-time failures out of Discord. PR failures already show on
+#     the PR itself; we only want push/schedule/dispatch failures.
+#   - The filename starts with `_` so future glob-style filters on
+#     workflow files (e.g., zizmor) can skip reusable infrastructure
+#     workflows if needed.
+
+name: _notify-failure (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      workflow:
+        description: 'Name of the calling workflow (typically ${{ github.workflow }}).'
+        required: true
+        type: string
+      job:
+        description: 'Name of the failing job.'
+        required: false
+        default: ''
+        type: string
+      extra:
+        description: 'Optional extra context to include in the embed description.'
+        required: false
+        default: ''
+        type: string
+    secrets:
+      DISCORD_WEBHOOK_URL:
+        description: 'Discord webhook URL.'
+        required: false   # warn and exit cleanly if absent
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-notify
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Post to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+          WORKFLOW: ${{ inputs.workflow }}
+          JOB: ${{ inputs.job }}
+          EXTRA: ${{ inputs.extra }}
+          RUN_ID: ${{ github.run_id }}
+          REF: ${{ github.ref }}
+          ACTOR: ${{ github.actor }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
+            echo "::warning::DISCORD_WEBHOOK_URL not set — skipping Discord notify."
+            exit 0
+          fi
+          DESC="**Workflow:** \`${WORKFLOW}\`"
+          if [ -n "${JOB:-}" ]; then
+            DESC="${DESC}"$'\n'"**Job:** \`${JOB}\`"
+          fi
+          DESC="${DESC}"$'\n'"**Trigger:** \`${EVENT}\` by \`${ACTOR}\` on \`${REF}\`"
+          if [ -n "${EXTRA:-}" ]; then
+            DESC="${DESC}"$'\n\n'"${EXTRA}"
+          fi
+          PAYLOAD=$(jq -n \
+            --arg title "⚠️ CI failure — ${WORKFLOW}" \
+            --arg desc "$DESC" \
+            --argjson color 15548997 \
+            --arg url "https://github.com/${REPO}/actions/runs/${RUN_ID}" \
+            '{username:"NextLayerSec CI", embeds:[{title:$title, description:$desc, color:$color, url:$url}]}')
+          curl -fsSL --max-time 30 -X POST \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"
+          echo "Posted failure notification for ${WORKFLOW}."

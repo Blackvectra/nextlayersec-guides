@@ -204,3 +204,15 @@ jobs:
         with:
           comment-summary-in-pr: on-failure
           fail-on-severity: high
+
+  # Push-to-main / scheduled failures ping Discord. PR failures are
+  # already visible on the PR (and would expose the webhook on forks),
+  # so the reusable workflow's caller filters with github.event_name.
+  notify-on-failure:
+    needs: [markdownlint, sigma-validate, yara-validate, typos, linkcheck, zizmor]
+    if: failure() && github.event_name != 'pull_request'
+    uses: ./.github/workflows/_notify-failure.yml
+    with:
+      workflow: ${{ github.workflow }}
+    secrets:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}

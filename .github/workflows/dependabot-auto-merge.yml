@@ -1,0 +1,84 @@
+# Auto-merge Dependabot security PRs that are patch-level OR for actions
+# (where there's effectively no breakage risk at the workflow level).
+#
+# Why: security advisories sit in Dependabot's queue waiting for human
+# attention. For a single-maintainer repo, that latency is the whole risk.
+# This workflow merges them automatically as soon as CI is green, the same
+# way the daily-draft auto-merge gate works.
+#
+# Safety:
+#   - Only acts on PRs from dependabot[bot] (filtered by github.actor).
+#   - Only auto-merges PATCH-level version bumps and SECURITY updates
+#     (Dependabot exposes both in the metadata fetched by the helper
+#     action). Minor / major bumps still require human review.
+#   - Auto-merge is gated on ALL required status checks passing — the
+#     workflow uses `gh pr merge --auto`, which queues the merge and
+#     waits for the branch protection rules. If a check fails, merge
+#     never fires.
+#   - Repo-vars kill switch: set AUTO_MERGE_DEPENDABOT=false in
+#     Settings → Actions → Variables to disable without editing this file.
+
+name: Dependabot auto-merge
+
+on:
+  pull_request_target:    # guard-allow: pull_request_target — Required for Dependabot PRs because secrets aren't available on regular pull_request triggers from forks. We only act on PRs from the dependabot[bot] actor and we DO NOT check out the PR's code; we only call gh-cli APIs.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write          # merge the PR
+  pull-requests: write     # approve + comment
+
+jobs:
+  auto-merge:
+    # Use github.event.pull_request.user.login (the PR author set by
+    # GitHub) NOT github.actor — `actor` can be set to a different user
+    # if someone re-runs the workflow on behalf of the bot, which would
+    # let a non-bot trigger this job. The author field is immutable.
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && vars.AUTO_MERGE_DEPENDABOT != 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Decide if this PR is auto-mergeable
+        id: decide
+        env:
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+          ALERT_STATE: ${{ steps.meta.outputs.alert-state }}
+        run: |
+          set -euo pipefail
+          # update-type values:
+          #   version-update:semver-patch
+          #   version-update:semver-minor
+          #   version-update:semver-major
+          # alert-state is set when the PR is for a security advisory.
+          if [ "${UPDATE_TYPE:-}" = "version-update:semver-patch" ] \
+             || [ -n "${ALERT_STATE:-}" ]; then
+            echo "automerge=true" >> "$GITHUB_OUTPUT"
+            echo "Decision: auto-merge (update-type=${UPDATE_TYPE}, alert-state=${ALERT_STATE:-none})"
+          else
+            echo "automerge=false" >> "$GITHUB_OUTPUT"
+            echo "Decision: leave for review (update-type=${UPDATE_TYPE})"
+          fi
+
+      - name: Enable auto-merge
+        if: steps.decide.outputs.automerge == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
+          gh pr review "$PR_URL" --approve --body "✅ Auto-approving — Dependabot patch / security update. Will merge once CI passes."
+          gh pr merge "$PR_URL" --auto --squash --delete-branch

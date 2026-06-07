@@ -1,0 +1,142 @@
+# repo-health — weekly drift assertion that catches structural rot before
+# it shows up as a user-facing problem.
+#
+# Three checks:
+#
+#   1. Required files exist. SECURITY.md / CONTRIBUTING.md / LICENSE /
+#      CODE_OF_CONDUCT.md / README.md / .github/CODEOWNERS / SUPPORT.md
+#      are foundational. If a refactor or rename ever deletes one, this
+#      flags it within a week instead of when an external contributor
+#      complains.
+#
+#   2. CODEOWNERS orphan check. Every top-level directory should be
+#      covered by an explicit CODEOWNERS rule OR fall through to the `*`
+#      catch-all. We assert that the `*` rule exists AND we list any
+#      newly-created top-level dir that isn't explicitly mentioned, so
+#      they can be added before they accumulate.
+#
+#   3. CODEOWNERS rule sanity. Every referenced @owner must exist as a
+#      GitHub user (we can't verify membership in this account, but we
+#      can detect obvious typos by checking the format).
+#
+# Runs weekly + on PRs that touch CODEOWNERS or top-level files. Fails
+# CI on missing-required-file (severity: high) and warns-only on the
+# CODEOWNERS-orphan check (severity: medium; you might intentionally
+# leave a new dir un-owned during early development).
+
+name: Repo health
+
+on:
+  pull_request:
+    paths:
+      - '.github/CODEOWNERS'
+      - 'SECURITY.md'
+      - 'CONTRIBUTING.md'
+      - 'LICENSE'
+      - 'CODE_OF_CONDUCT.md'
+      - 'README.md'
+      - 'SUPPORT.md'
+      - '.github/workflows/repo-health.yml'
+  push:
+    branches: [main]
+  schedule:
+    - cron: '27 14 * * 1'    # Mondays 14:27 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # --- Check 1: required files exist -----------------------------------
+      - name: Check — required files present
+        run: |
+          set -euo pipefail
+          required=(
+            "README.md"
+            "LICENSE"
+            "SECURITY.md"
+            "CONTRIBUTING.md"
+            "CODE_OF_CONDUCT.md"
+            "CHANGELOG.md"
+            ".github/CODEOWNERS"
+            ".github/dependabot.yml"
+          )
+          fail=0
+          for f in "${required[@]}"; do
+            if [ -f "$f" ]; then
+              echo "OK   $f"
+            else
+              echo "FAIL $f — required file is missing"
+              fail=1
+            fi
+          done
+          [ $fail -eq 0 ] || { echo "::error::Required-files check failed."; exit 1; }
+          echo "Check 1 PASS — all required files present."
+
+      # --- Check 2: CODEOWNERS has a catch-all + every top-level dir is
+      #     listed (warn-only so a brand-new dir doesn't immediately
+      #     fail the build before the owner adds the rule) ------------------
+      - name: Check — CODEOWNERS coverage
+        run: |
+          set -euo pipefail
+          # Strip comments + blank lines.
+          rules=$(sed -E 's/#.*//' .github/CODEOWNERS | sed -E 's/[[:space:]]+$//' | grep -v '^[[:space:]]*$' || true)
+          if ! printf '%s\n' "$rules" | grep -qE '^\*[[:space:]]+@'; then
+            echo "::error::CODEOWNERS has no '* @<owner>' catch-all rule. Every PR would skip CODEOWNERS review."
+            exit 1
+          fi
+          echo "Catch-all rule present."
+
+          # List top-level dirs (excluding hidden + node_modules).
+          top_dirs=$(find . -maxdepth 1 -type d -not -path . -not -name '.*' -not -name 'node_modules' \
+            | sed 's|^\./||' | sort)
+
+          orphan=0
+          for d in $top_dirs; do
+            if printf '%s\n' "$rules" | grep -qE "^/${d}/?[[:space:]]"; then
+              echo "OK    /${d}/ has an explicit rule"
+            else
+              echo "WARN  /${d}/ falls through to the * catch-all (add an explicit rule if it should require a specific reviewer)"
+              orphan=1
+            fi
+          done
+          if [ $orphan -eq 1 ]; then
+            echo "::warning::Some top-level directories have no explicit CODEOWNERS rule. Add one to .github/CODEOWNERS if intentional, or update the directory layout."
+          fi
+          echo "Check 2 PASS (warn-only)."
+
+      # --- Check 3: CODEOWNERS rule format sanity --------------------------
+      - name: Check — CODEOWNERS rule format
+        run: |
+          set -euo pipefail
+          # Every non-empty, non-comment line must have:
+          #   <path-pattern>  @<github-handle-or-org/team>
+          # We validate the @ at minimum.
+          fail=0
+          while IFS= read -r line; do
+            [ -z "${line// }" ] && continue
+            case "$line" in \#*) continue ;; esac
+            if ! printf '%s' "$line" | grep -qE '@[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)?'; then
+              echo "FAIL malformed CODEOWNERS rule: $line"
+              fail=1
+            fi
+          done < .github/CODEOWNERS
+          [ $fail -eq 0 ] || { echo "::error::CODEOWNERS rule format check failed."; exit 1; }
+          echo "Check 3 PASS — all CODEOWNERS rules well-formed."

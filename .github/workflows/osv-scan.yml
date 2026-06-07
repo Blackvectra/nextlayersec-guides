@@ -88,3 +88,12 @@ jobs:
         with:
           sarif_file: results.sarif
           category: osv-scanner
+
+  notify-on-failure:
+    needs: scan
+    if: failure() && github.event_name != 'pull_request'
+    uses: ./.github/workflows/_notify-failure.yml
+    with:
+      workflow: ${{ github.workflow }}
+    secrets:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}

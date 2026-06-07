@@ -24,7 +24,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-permissions: read-all
+# Minimal top-level. The analysis job adds the writes it needs (SARIF
+# upload + OIDC). Was `read-all` per OSSF docs but zizmor (correctly)
+# flags that as overly broad.
+permissions:
+  contents: read
 
 jobs:
   analysis:
@@ -70,3 +74,12 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
+
+  notify-on-failure:
+    needs: analysis
+    if: failure()
+    uses: ./.github/workflows/_notify-failure.yml
+    with:
+      workflow: ${{ github.workflow }}
+    secrets:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
