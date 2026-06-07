@@ -8,6 +8,10 @@
 /purple-team-labs/               @Blackvectra
 /threat-intelligence/            @Blackvectra
 /vulnerabilities/                @Blackvectra
+/hardening/                      @Blackvectra
+/incident-reports/               @Blackvectra
+/frameworks/                     @Blackvectra
+/tools/                          @Blackvectra
 
 # CI / repo plumbing
 /.github/                        @Blackvectra

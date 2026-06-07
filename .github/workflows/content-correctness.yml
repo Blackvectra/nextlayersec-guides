@@ -1,0 +1,59 @@
+# content-correctness — repo-content quality checks unique to a security
+# publication. None of the existing lint jobs catch these:
+#
+#   - markdownlint     → formatting only
+#   - lychee           → EXTERNAL links only (skips relative paths)
+#   - sigma-validate   → Sigma syntax only (won't catch a bogus T#### in
+#                        the rule's description)
+#   - typos            → spelling
+#
+# Fills the gap. Failures here mean drafted content is technically wrong
+# even if it parses, and would mislead a reader who deploys it.
+#
+# Runs on every PR touching markdown / KQL / Sigma, on push to main, and
+# weekly so deprecated ATT&CK technique IDs (which can change without our
+# files changing) get caught.
+
+name: Content correctness
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - 'detections/**'
+      - 'vulnerabilities/**'
+      - 'scripts/validate_content.py'
+      - '.github/workflows/content-correctness.yml'
+  push:
+    branches: [main]
+  schedule:
+    - cron: '37 14 * * 1'    # Mondays 14:37 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run content validator
+        run: python scripts/validate_content.py

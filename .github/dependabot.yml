@@ -17,3 +17,20 @@ updates:
     commit-message:
       prefix: "ci"
       include: scope
+
+  # CI Python deps — pysigma, zizmor. Tracked in requirements-ci.txt at
+  # repo root so Dependabot can monitor the version constraints.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "13:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - python
+    commit-message:
+      prefix: "ci"
+      include: scope

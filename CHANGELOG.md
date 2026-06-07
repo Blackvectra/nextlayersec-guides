@@ -4,6 +4,70 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (operational workflows — KEV watcher + stale automation)
+- **`.github/workflows/kev-watch.yml` added** — daily-scheduled job that diffs the CISA KEV catalog and opens a tracking issue when a newly-listed CVE matches our priority vendors (Microsoft, Fortinet, Cisco, Citrix, Ivanti, Palo Alto, SonicWall, VMware, F5, Progress/MOVEit, ConnectWise, Veeam, Atlassian) AND doesn't already have a write-up in `vulnerabilities/`. Idempotent — re-runs don't duplicate, and an existing open issue with the same title short-circuits. Opens at most one issue per run (highest-priority new entry only) to avoid spam if CISA does a batch add. Directly feeds the Monday CVE lane with prioritized work; the drafter now picks against a curated candidate instead of scanning the full feed cold.
+- **`.github/workflows/stale.yml` added** — issue/PR staleness automation. Issues: 60d idle → `stale` label + comment; +14d → close. PRs decay faster (30d → stale, +7d → close) because the drafter opens new ones every weekday and a 30-day-old PR is almost always dead. Exemptions: anything labeled `pinned` / `security` / `needs-triage` / `in-progress` / `kev`, or anything with an assignee. Daily 02:15 UTC, off-peak. Operation budget of 30/run is enough for this repo's traffic.
+- **`.github/allowed-actions.txt` updated** — comment notes `actions/stale` is now part of the actions/ owner-prefix allowlist.
+
+### Added (security hardening pass — workflow-protecting + content-correctness CI)
+- **`.github/workflows/workflow-guard.yml` added** — meta-CI that defends the CI surface against three GitHub Actions footguns no existing tool catches all of:
+  - **New `pull_request_target` trigger** introduced without an explicit `# guard-allow: pull_request_target — <reason>` justification comment in the same workflow → hard fail. That trigger runs with write-access secrets on BASE-repo code while reviewing untrusted PR code; misuse is the canonical org-takeover footgun.
+  - **New third-party action `uses:` line** introduced that isn't on the explicit allowlist (`.github/allowed-actions.txt`) → hard fail. Forces every new supply-chain dependency through deliberate review.
+  - **New `github.event.*` template expansion** in any workflow change → warning annotation on the PR with line refs so it lands in the conversation, not just SARIF.
+  - Runs only on PRs touching `.github/workflows/` or the allowlist file. Zero overhead on content PRs.
+- **`.github/allowed-actions.txt` added** — canonical list of trusted action publishers (`actions/`, `github/codeql-action`, `step-security/harden-runner`, `anthropics/claude-code-action`, `ossf/scorecard-action`, `google/osv-scanner-action`, `DavidAnson/markdownlint-cli2-action`, `crate-ci/typos`, `lycheeverse/lychee-action`, `gitleaks/gitleaks-action`). Owner-prefix match — version / SHA pin can change without an allowlist update. Becomes the trusted-code manifest once the SHA-pin sweep lands.
+- **`.github/workflows/content-correctness.yml` + `scripts/validate_content.py` added** — quality checks unique to a security-content publication that no existing lint job catches:
+  - **MITRE ATT&CK technique IDs** referenced anywhere in the repo must exist in the current ATT&CK STIX bundle (fetched from `mitre-attack/attack-stix-data`, the live source — NOT the legacy `mitre/cti` mirror). Catches drafter hallucinations, typos, and silently-revoked techniques (ATT&CK v17 revoked `T1562.001` and `T1656`; both flagged and consciously allowlisted as historical Scattered Spider profile references).
+  - **CVE filename ↔ body match** — every `vulnerabilities/CVE-YYYY-NNNNN.md` must reference its declared CVE ID at least once in the body. Catches copy-paste mistakes.
+  - **Internal markdown links** — every `[label](relative/path)` must resolve to an existing file. Lychee handles external URLs; this closes the gap. Path-traversal-safe via `pathlib.resolve()` + `relative_to(REPO_ROOT)` check.
+  - Runs on PRs that touch markdown / detections / vulnerabilities, on push to `main`, and weekly so deprecated ATT&CK IDs get caught even when our content doesn't change.
+
+### Added (security hardening pass — secret scanning + dependency CVE scanning)
+- **`.github/workflows/secret-scan.yml` added (gitleaks).** Catches first-party mistakes that the existing CI doesn't:
+  - GitHub native secret scanning matches a fixed set of provider tokens. gitleaks adds generic-high-entropy + repo-specific patterns (Discord webhook URLs, Anthropic API keys `sk-ant-...`, Defender for Endpoint bearer tokens, Entra application client secrets).
+  - PRs run a fast incremental scan; push-to-main + a weekly Monday cron run full-history scans.
+  - Hardened identically to the other workflows (step-security/harden-runner audit, `persist-credentials: false`, minimal permissions, concurrency group).
+- **`.gitleaks.toml` added.** Custom ruleset extends gitleaks' built-in default rules with four repo-specific patterns and a tight allowlist for template / placeholder files (Sigma + YARA templates, playbook examples, hardening template) so the false-positive rate stays at zero.
+- **`.github/workflows/osv-scan.yml` added (OSV-Scanner).** Closes the dependency-monitoring gap:
+  - `dependency-review` only fires on PRs that change the manifest. It doesn't flag existing vulnerable deps already on `main`.
+  - `dependabot` only opens PRs when a newer version exists. It doesn't alert on "your pinned version has a known CVE with no fix yet".
+  - OSV-Scanner scans `requirements-ci.txt` against OSV.dev (which aggregates GHSA, PyPA Advisory DB, OSV-Schema) and fails CI on any unfixed known CVE. SARIF uploaded to Code Scanning so findings land alongside CodeQL + Scorecard + gitleaks alerts.
+  - Runs on PRs that touch `requirements*.txt` / `package*.json` / the workflow itself, on push to `main`, and weekly.
+
+### Changed (security hardening pass — Anthropic credit graceful degradation)
+- **`.github/workflows/daily-draft.yml` pre-flight credit check.** Before invoking the (long-running, expensive) `claude-code-action`, the workflow now makes a 1-token throwaway call to `api.anthropic.com/v1/messages` to verify the account has credit. Three outcomes:
+  - **200 OK** → `have_credit=true`, the lane step runs as normal.
+  - **`credit_balance` / `insufficient` / `quota` / `billing` in the error body** → `have_credit=false`, `skip_reason=insufficient_credit`. All lane steps and the fact-check step skip via `if:` gate. Workflow exits **green** (status: success) with a `::warning::` annotation pointing to https://console.anthropic.com/settings/billing. This is the explicit goal: when the API is out of budget, bypass and show green; resume normally when credit is topped up.
+  - **Missing `ANTHROPIC_API_KEY` secret** → same green-skip behavior with `skip_reason=missing_secret`.
+  - **Any other API error** (auth, network, malformed request) → fail hard. A real problem worth knowing about.
+- **Cost of the pre-flight: ~1 input + 1 output token on Haiku** = roughly $4×10⁻⁷ per run. Effectively free.
+- **Discord notify updated** to distinguish three outcomes: ✅ success (drafter ran end-to-end), ⏭️ skipped (pre-flight detected missing key or insufficient credit; explains the skip reason with the billing-console URL), ⚠️ failure (drafter ran but errored). Previously a credit-balance failure showed up as a generic "drafting run failed" red ping — now it's a yellow "skipped, top up here" ping that's actionable in one click.
+
+### Changed (security hardening pass — additional findings)
+- **`.gitignore` replaced.** The old file was a leftover C/C++ template with no relevance to this markdown+Python+YAML repo. New file blocks the actual detritus this stack produces: Python (`__pycache__`, `.pytest_cache`, virtual envs), Node (`node_modules` from `npx markdownlint-cli2`), editor/OS (`.vscode`, `.DS_Store`, `Thumbs.db`), local env (`.env`, `*.local`), CI artifacts (`zizmor.sarif`, `results.sarif`), plus the `.seo` / `.ot` / `.OT` extensions per maintainer request.
+- **`requirements-ci.txt` added.** Python dependencies used by the CI workflows (pysigma, zizmor) were inline in the YAML — Dependabot couldn't monitor them. Now tracked in a real file at repo root with the same constraints. `lint.yml` updated to `pip install -r requirements-ci.txt` in both the sigma-validate and zizmor jobs.
+- **`.github/dependabot.yml` extended.** Added the `pip` ecosystem to track `requirements-ci.txt`. Same weekly schedule as the existing github-actions ecosystem. Closes the gap where a pysigma or zizmor advisory could land without a Dependabot PR.
+- **`.github/CODEOWNERS` extended.** Added explicit ownership rules for `/hardening/`, `/incident-reports/`, `/frameworks/`, and `/tools/` so they don't fall through to the catch-all `*` rule. Defense-in-depth — if you ever add other owners with limited paths, these content categories still require you.
+
+### Verified — no fix needed
+- **No hardcoded sensitive values** in `*.py`, `*.yml`, `*.toml`, `*.json` files. No IPs (other than expected GitHub / Microsoft / step-security infrastructure IPs in harden-runner audit logs), no contact emails, no API key / token / password patterns matching the standard scan regexes.
+- **No `pull_request_target` usage** — the GHA security footgun. Only a comment reference in `lint.yml` documenting zizmor's check.
+- **No Python script safety issues** — `subprocess` with `shell=True`, `eval`, `exec`, `os.system`, `yaml.load` (unsafe variant), `pickle.loads` all absent from `scripts/` and `detections/`.
+- **No CI log secret leakage** — no `echo $SECRET` / `echo "${{ secrets.X }}"` patterns anywhere.
+- **No tracked files that shouldn't be** — git ls-files clean for `.env`, `.key`, `.pem`, `secret`, `credential`, `.swp`, `.DS_Store`, `Thumbs.db`, `__pycache__`.
+- **SECURITY.md is adequate** — GitHub Private Vulnerability Reporting + maintainer email both documented; no fix needed.
+
+### Changed (security hardening pass — concurrency control)
+- **`concurrency:` blocks added** to all seven hand-edited workflows (`lint.yml`, `daily-draft.yml`, `daily-reminder.yml`, `discord-reminder.yml`, `discord-todo-update.yml`, `scorecard.yml`, `todo-sync.yml`). `codeql.yml` skipped (GitHub-managed).
+  - **`lint.yml`** uses `cancel-in-progress: true` — a new commit on a PR supersedes the previous in-flight CI run. Cuts wasted minutes on stale runs.
+  - **All other workflows** use `cancel-in-progress: false` — scheduled / long-running, never killed mid-execution. A partial run is worse than waiting for the previous one to finish. Specifically protects the Tier-3 agentic drafter from being cancelled mid-Claude-session (which would burn API credit with no output).
+  - Group key on every workflow is `${{ github.workflow }}-${{ github.ref }}` so concurrent runs are scoped per-branch (PR runs don't block `main` runs).
+
+### Verified — no action needed
+- **`${{ }}` interpolation audit** — no workflow interpolates user-controlled event payload (issue body, comment body, PR title, etc.) directly into a `run:` shell block. The only `github.event.*` reference is `github.event.inputs.lane` in `daily-draft.yml`, and it's assigned to an env var first (`LANE_INPUT: ${{ github.event.inputs.lane }}`) and only referenced as `$LANE_INPUT` from the shell. That's the canonical safe pattern.
+- **Top-level `permissions:` blocks** — every hand-edited workflow has an explicit minimal-permissions block. `codeql.yml` has per-job permissions only (GitHub-managed). No `permissions: write-all` anywhere.
+- **Zizmor** — clean at `--min-severity=medium` after the change (4 ignored, 37 suppressed — both numbers expected and tracked).
+
 ### Added (hardening — new top-level content area)
 - **`hardening/compensating-controls.md`** — companion reference for the baseline exception process. Defines what a real compensating control is (vs. theater) via the five-test rule, lists acceptable temporary / permanent substitutes for the most common baseline gaps (organized by Identity / Email / Endpoint / Backup / Logging), explicitly enumerates common proposals that DO NOT count (user training as MFA substitute, "we have a policy", legacy-auth-for-the-printer, etc.), and specifies the seven documentation items every active compensating control must have on file.
 - **`hardening/nextlayersec-baseline.md`** — **the non-negotiable security baseline** NextLayerSec enforces on every client tenant in production. 6 sections (Identity / Email / Endpoint / Backup / Logging / IR), each item with explicit *what / verify / why / what-if-not*. Audit procedure, two-type exception process (Type A implementation delay, Type B permanent non-conformance with exec sign-off; explicitly no Type C). Documented as cyber-insurance evidence pack and onboarding gate — gaps must remediate within 30 days or the engagement does not proceed. References the reference guides for the *how* and the threat-intel / case-record content for the *why*.

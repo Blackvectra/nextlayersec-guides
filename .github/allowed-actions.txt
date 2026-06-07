@@ -1,0 +1,37 @@
+# Explicit allowlist of third-party GitHub Actions allowed in this repo.
+#
+# The `workflow-guard` CI job fails any PR that introduces a `uses:` line
+# referencing an action NOT on this list. Owner-prefix match — version /
+# SHA pin can change without an allowlist update.
+#
+# Why an allowlist:
+#   - A new action is a new supply-chain dependency. Its maintainer can push
+#     malicious code at any time; we want to make that decision deliberately,
+#     not via a drive-by PR.
+#   - Pairs with the "SHA-pin all actions" follow-up: once every entry here
+#     has a pinned SHA, this file becomes the canonical list of trusted code.
+#
+# How to add an action:
+#   1. Verify the publisher (GitHub Marketplace "by <verified>" badge or
+#      direct vendor org).
+#   2. Skim the action's source for `${{ github.event.* }}` interpolation
+#      in `run:` blocks, network exfil endpoints, etc.
+#   3. Add the owner/repo here (one per line, comments OK with `#`).
+#   4. In the same PR, add the `uses:` line to the workflow.
+#
+# Format: owner OR owner/repo (one per line). Wildcards NOT supported on
+# purpose — adding `*` defeats the point of the allowlist.
+
+# --- First-party (GitHub / Anthropic / step-security / OSSF) -----------------
+actions/                          # actions/checkout, actions/setup-python, actions/github-script, actions/upload-artifact, actions/stale
+github/codeql-action              # CodeQL init/analyze/upload-sarif
+step-security/harden-runner       # egress audit
+anthropics/claude-code-action     # daily-draft drafter
+ossf/scorecard-action             # weekly OpenSSF Scorecard
+google/osv-scanner-action         # CVE scan for pip deps
+
+# --- Vetted third-party -----------------------------------------------------
+DavidAnson/markdownlint-cli2-action   # markdown lint (used in lint.yml)
+crate-ci/typos                        # spell-check
+lycheeverse/lychee-action             # external link check
+gitleaks/gitleaks-action              # secret scan

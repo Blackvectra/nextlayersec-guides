@@ -1,0 +1,90 @@
+# OSV-Scanner — CVE scanning for project dependencies.
+#
+# Why this when we already have dependency-review + dependabot:
+#   - dependency-review only fires on PRs that change the manifest. It does
+#     NOT flag existing vulnerable deps already on main.
+#   - dependabot opens version-bump PRs but only when a *newer* version
+#     exists. It doesn't tell you "your pinned version has a known CVE".
+#   - OSV closes the gap: it scans the requirements file against OSV.dev
+#     (which aggregates GHSA, PyPA Advisory DB, OSV-Schema, etc.) and
+#     fails on any unfixed known CVE in a currently-pinned version.
+#
+# Scope: `requirements-ci.txt` (pysigma + zizmor). If/when we add a
+# runtime requirements.txt or a package.json, the recursive scan picks
+# them up automatically.
+#
+# Runs:
+#   - On every PR (catch newly-introduced vulnerable deps before merge).
+#   - Weekly schedule (catch advisories published *after* a dep was merged).
+#   - On push to main (so the SARIF feed reflects the current state).
+#
+# Results upload to GitHub Code Scanning so findings appear alongside
+# CodeQL + Scorecard alerts under Security → Code scanning.
+
+name: OSV-Scanner
+
+on:
+  pull_request:
+    paths:
+      - 'requirements*.txt'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/osv-scan.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'requirements*.txt'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/osv-scan.yml'
+  schedule:
+    - cron: '17 14 * * 1'    # Mondays 14:17 UTC, after Scorecard + gitleaks
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: OSV scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write     # upload SARIF
+      actions: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run OSV-Scanner
+        uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
+        with:
+          # --recursive walks the tree. Git-root scanning is off by default
+          # in v2.0+ (controlled by --include-git-root which we deliberately
+          # do NOT set — gitleaks handles commit-graph scanning). SARIF
+          # output goes to results.sarif for code-scanning upload.
+          scan-args: |-
+            --recursive
+            --format=sarif
+            --output=results.sarif
+            ./
+
+      - name: Upload SARIF to code-scanning
+        # Always upload even on failure so findings show up under
+        # Security → Code scanning regardless of exit code.
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: osv-scanner

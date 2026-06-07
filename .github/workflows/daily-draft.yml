@@ -27,6 +27,12 @@ on:
         required: false
         default: ''
 
+concurrency:
+  # Scheduled / long-running. Don't cancel mid-execution — a partial run is
+  # worse than waiting for the previous run to finish.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
@@ -79,6 +85,50 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # ===== Pre-flight: Anthropic credit check =====
+      # Before invoking the (expensive, long-running) claude-code-action,
+      # make a 1-token throwaway call to api.anthropic.com to verify the
+      # account has credit. Three outcomes:
+      #   - Secret missing       → skip gracefully (workflow exits green)
+      #   - 200 OK               → proceed to the lane step
+      #   - credit_balance_low   → skip gracefully (workflow exits green)
+      #   - any other API error  → fail hard (real problem worth knowing)
+      # Cost of the pre-flight: ~1 input + 1 output token on Haiku =
+      # roughly $4e-7 per run. Essentially free.
+      - name: Pre-flight — Anthropic credit check
+        id: credit
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "::warning::ANTHROPIC_API_KEY secret is not set. Skipping lane step."
+            echo "have_credit=false" >> "$GITHUB_OUTPUT"
+            echo "skip_reason=missing_secret" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          response=$(curl -sS -w $'\n%{http_code}' --max-time 30 \
+            -X POST https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d '{"model":"claude-haiku-4-5-20251001","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}')
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          if [ "$http_code" = "200" ]; then
+            echo "✅ Anthropic credit available."
+            echo "have_credit=true" >> "$GITHUB_OUTPUT"
+            echo "skip_reason=" >> "$GITHUB_OUTPUT"
+          elif echo "$body" | grep -qiE "credit_balance|insufficient|quota|billing"; then
+            echo "::warning::⚠️ Anthropic credit balance is too low. Skipping lane step gracefully — workflow exits 0 (this is expected behavior; top up at https://console.anthropic.com/settings/billing)."
+            echo "have_credit=false" >> "$GITHUB_OUTPUT"
+            echo "skip_reason=insufficient_credit" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Unexpected Anthropic API error (HTTP $http_code):"
+            echo "$body" | head -10
+            exit 1
+          fi
+
       # -------- Common preamble for all prompts --------
       # Each lane's prompt MUST follow these rules:
       # - Never fabricate facts (CVSS scores, KB numbers, vendor specifics).
@@ -90,7 +140,7 @@ jobs:
       #   says to (the only "edits-allowed" lanes are tools, cleanup, review).
 
       - name: Lane — Monday CVE
-        if: steps.prep.outputs.lane == 'cve'
+        if: steps.prep.outputs.lane == 'cve' && steps.credit.outputs.have_credit == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -129,7 +179,7 @@ jobs:
                "TBD — verify" field for me to check.
 
       - name: Lane — Tuesday Detection
-        if: steps.prep.outputs.lane == 'detection'
+        if: steps.prep.outputs.lane == 'detection' && steps.credit.outputs.have_credit == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -145,7 +195,7 @@ jobs:
             7. Branch auto/detection-t<id>; commit; open a DRAFT PR titled "Draft: detection T<id> — <name>". Body: explain logic and call out any thresholds / table-name assumptions to verify.
 
       - name: Lane — Wednesday Playbook
-        if: steps.prep.outputs.lane == 'playbook'
+        if: steps.prep.outputs.lane == 'playbook' && steps.credit.outputs.have_credit == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -159,7 +209,7 @@ jobs:
             5. Branch auto/playbook-<slug>; commit; open a DRAFT PR titled "Draft: playbook — <scenario>". Body summarizes the trigger and the containment-now decisions.
 
       - name: Lane — Thursday Threat intel
-        if: steps.prep.outputs.lane == 'threat-intel'
+        if: steps.prep.outputs.lane == 'threat-intel' && steps.credit.outputs.have_credit == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -174,7 +224,7 @@ jobs:
             6. Branch auto/threat-intel-<slug>; commit; open a DRAFT PR titled "Draft: threat intel — <name>". Body lists "TBD — verify" items.
 
       - name: Lane — Friday Tools/frameworks
-        if: steps.prep.outputs.lane == 'tools'
+        if: steps.prep.outputs.lane == 'tools' && steps.credit.outputs.have_credit == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -187,7 +237,7 @@ jobs:
             3. Branch auto/tools-<date>; commit; open a DRAFT PR titled "Draft: tools/frameworks update — <topic>".
 
       - name: Lane — Saturday Cleanup
-        if: steps.prep.outputs.lane == 'cleanup'
+        if: steps.prep.outputs.lane == 'cleanup' && steps.credit.outputs.have_credit == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -205,7 +255,7 @@ jobs:
             4. Branch auto/cleanup-<slug>; commit; open a DRAFT PR titled "Draft: cleanup — <item>".
 
       - name: Lane — Sunday Weekly review
-        if: steps.prep.outputs.lane == 'review'
+        if: steps.prep.outputs.lane == 'review' && steps.credit.outputs.have_credit == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -223,7 +273,7 @@ jobs:
         # No scheduled weekday picks 'hardening' — it's available only via
         # workflow_dispatch with lane=hardening. Pair with another lane on
         # the same day by dispatching twice.
-        if: steps.prep.outputs.lane == 'hardening'
+        if: steps.prep.outputs.lane == 'hardening' && steps.credit.outputs.have_credit == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -292,7 +342,7 @@ jobs:
           fi
 
       - name: Adversarial fact-check (Claude skeptic)
-        if: steps.precheck.outputs.verdict == 'pass'
+        if: steps.precheck.outputs.verdict == 'pass' && steps.credit.outputs.have_credit == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -392,12 +442,26 @@ jobs:
           REPO: ${{ github.repository }}
           LANE: ${{ steps.prep.outputs.lane }}
           STATUS: ${{ job.status }}
+          SKIP_REASON: ${{ steps.credit.outputs.skip_reason }}
         run: |
           set -euo pipefail
           if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
             echo "::warning::DISCORD_WEBHOOK_URL not set — skipping Discord ping."; exit 0
           fi
-          if [ "$STATUS" = "success" ]; then
+          # Distinguish three outcomes:
+          #   success       → drafter ran end-to-end
+          #   skipped       → pre-flight detected missing key or insufficient credit; no lane attempted
+          #   failure       → drafter ran but errored
+          if [ -n "${SKIP_REASON:-}" ]; then
+            EMOJI="⏭️"; COLOR=10070709
+            if [ "$SKIP_REASON" = "insufficient_credit" ]; then
+              MSG="Skipped **${LANE}** lane — Anthropic credit balance too low. Top up at https://console.anthropic.com/settings/billing and the next scheduled run will resume normally."
+            elif [ "$SKIP_REASON" = "missing_secret" ]; then
+              MSG="Skipped **${LANE}** lane — \`ANTHROPIC_API_KEY\` secret is not set."
+            else
+              MSG="Skipped **${LANE}** lane (reason: ${SKIP_REASON})."
+            fi
+          elif [ "$STATUS" = "success" ]; then
             EMOJI="✅"; COLOR=3066993
             MSG="Drafted a **${LANE}** entry and opened a draft PR for review."
           else

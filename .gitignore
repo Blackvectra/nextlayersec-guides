@@ -1,41 +1,63 @@
-# Prerequisites
-*.d
+# NextLayerSec Guides — .gitignore
+#
+# Repo is markdown + Python + GitHub Actions YAML. This file blocks the
+# common detritus that those generate locally.
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# --- Python -----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 
-# Precompiled Headers
-*.gch
-*.pch
+# Virtual envs
+.venv/
+venv/
+env/
+ENV/
 
-# Linker files
-*.ilk
+# --- Node / npm (created by `npx markdownlint-cli2`) ------------------------
+node_modules/
+package-lock.json
+.npm/
 
-# Debugger Files
-*.pdb
+# --- Editors / OS -----------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+# --- Local environment + secrets --------------------------------------------
+.env
+.env.*
+*.local
+*.secret
 
-# Fortran module files
-*.mod
-*.smod
+# --- Logs / temp ------------------------------------------------------------
+*.log
+*.tmp
+*.bak
+tmp/
+temp/
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+# --- CI artifacts -----------------------------------------------------------
+zizmor.sarif
+results.sarif
+*.sarif.gz
 
-# Executables
-*.exe
-*.out
-*.app
+# --- Build / packaging ------------------------------------------------------
+dist/
+build/
 
-# debug information files
-*.dwo
+# --- File types we want to ignore by extension (per maintainer request) ----
+*.seo
+*.ot
+*.OT
