@@ -21,3 +21,21 @@ rules:
   artipacked:
     ignore:
       - codeql.yml
+
+  # dependabot-auto-merge.yml deliberately uses pull_request_target
+  # because Dependabot PR runs need access to GITHUB_TOKEN with write
+  # scopes, which `pull_request` does not provide. The workflow is safe
+  # because:
+  #   (a) it does NOT check out PR code (no actions/checkout step),
+  #   (b) it gates on github.event.pull_request.user.login (not the
+  #       spoofable github.actor) being literally 'dependabot[bot]',
+  #   (c) it only calls gh-cli APIs against the PR's metadata, never
+  #       executes any code from the PR diff,
+  #   (d) the auto-merge decision requires patch-only or security-update
+  #       metadata from Dependabot's signed metadata payload.
+  # This is the canonical safe usage pattern documented in GitHub's
+  # security best practices. See .github/workflows/workflow-guard.yml
+  # which independently validates the # guard-allow comment.
+  dangerous-triggers:
+    ignore:
+      - dependabot-auto-merge.yml

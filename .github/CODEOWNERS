@@ -12,6 +12,8 @@
 /incident-reports/               @Blackvectra
 /frameworks/                     @Blackvectra
 /tools/                          @Blackvectra
+/docs/                           @Blackvectra
+/scripts/                        @Blackvectra
 
 # CI / repo plumbing
 /.github/                        @Blackvectra

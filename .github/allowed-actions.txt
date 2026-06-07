@@ -35,3 +35,4 @@ DavidAnson/markdownlint-cli2-action   # markdown lint (used in lint.yml)
 crate-ci/typos                        # spell-check
 lycheeverse/lychee-action             # external link check
 gitleaks/gitleaks-action              # secret scan
+dependabot/fetch-metadata             # dependabot-auto-merge.yml metadata fetch

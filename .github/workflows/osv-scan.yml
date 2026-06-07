@@ -70,12 +70,17 @@ jobs:
       - name: Run OSV-Scanner
         uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
         with:
-          # --recursive walks the tree. Git-root scanning is off by default
-          # in v2.0+ (controlled by --include-git-root which we deliberately
-          # do NOT set — gitleaks handles commit-graph scanning). SARIF
-          # output goes to results.sarif for code-scanning upload.
+          # --recursive walks the tree. Git-root scanning is off by
+          # default in v2.0+ (controlled by --include-git-root which we
+          # deliberately do NOT set — gitleaks handles commit-graph
+          # scanning). --config points at osv-scanner.toml at repo root
+          # for documented vulnerability suppressions (transitive deps
+          # without an upstream fix that aren't reachable in our
+          # context). SARIF output goes to results.sarif for code-
+          # scanning upload regardless.
           scan-args: |-
             --recursive
+            --config=osv-scanner.toml
             --format=sarif
             --output=results.sarif
             ./
@@ -88,3 +93,12 @@ jobs:
         with:
           sarif_file: results.sarif
           category: osv-scanner
+
+  notify-on-failure:
+    needs: scan
+    if: failure() && github.event_name != 'pull_request'
+    uses: ./.github/workflows/_notify-failure.yml
+    with:
+      workflow: ${{ github.workflow }}
+    secrets:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}

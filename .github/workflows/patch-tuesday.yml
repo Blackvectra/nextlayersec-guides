@@ -1,0 +1,116 @@
+# Patch Tuesday reminder — opens a tracking issue on the morning of the
+# second Tuesday of every month.
+#
+# Why this exists: Microsoft Patch Tuesday is the single most predictable
+# CVE-firehose date on the calendar for a Windows-focused MSP. Opening a
+# dedicated issue gives you a hook to:
+#   - Triage the month's MSRC advisories against the priority CVE list.
+#   - Spawn a CVE write-up lane (or several) for the highest-impact ones.
+#   - Track which client tenants are patched.
+#
+# Cron handling: GitHub Actions cron doesn't support "second Tuesday of
+# the month" directly. We fire every Tuesday in the typical window (8-14
+# of the month) at 14:00 UTC and the run-step short-circuits unless
+# `date +%u` is 2 (Tuesday) AND `date +%d` is between 8 and 14 — which
+# is precisely the second Tuesday by definition.
+
+name: Patch Tuesday reminder
+
+on:
+  schedule:
+    # Every Tuesday 8-14 of the month at 14:00 UTC.
+    - cron: '0 14 8-14 * 2'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Confirm second Tuesday
+        id: gate
+        run: |
+          set -euo pipefail
+          # cron 8-14 + Tue restricts us to second Tuesday automatically,
+          # but workflow_dispatch can fire any day. Allow dispatch to skip
+          # the date check.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          DOW=$(date -u +%u)   # 1=Mon..7=Sun
+          DOM=$(date -u +%d)   # 01..31
+          if [ "$DOW" = "2" ] && [ "$DOM" -ge 8 ] && [ "$DOM" -le 14 ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Not the second Tuesday (DOW=$DOW DOM=$DOM). Skipping."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open Patch Tuesday tracking issue
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          MONTH=$(date -u +'%B %Y')
+          TITLE="Patch Tuesday tracking — ${MONTH}"
+
+          # Idempotent: if today's issue already exists, skip.
+          existing=$(gh issue list --repo "$REPO" --state open \
+            --search "in:title \"${TITLE}\"" \
+            --json number --jq '.[0].number // ""')
+          if [ -n "$existing" ]; then
+            echo "Issue already open for ${MONTH} (#${existing}). Skipping."
+            exit 0
+          fi
+
+          BODY=$(cat <<EOF
+          **Month:** ${MONTH}
+          **Today:** Patch Tuesday — Microsoft + Adobe + others publish their
+          monthly security advisories.
+
+          **Tracking checklist:**
+
+          - [ ] Skim the [MSRC Security Update Guide](https://msrc.microsoft.com/update-guide/) for this month's advisories.
+          - [ ] Identify any **critical RCE / EoP** that affects the maintainer's tenants (Windows Server, Exchange, SharePoint, M365, Defender, Intune).
+          - [ ] Cross-check against the [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) — anything new there should already have an open KEV-watcher issue.
+          - [ ] Dispatch the Monday CVE lane (\`workflow_dispatch\` on \`daily-draft.yml\` with \`lane=cve\`) for each highest-impact CVE that lacks a write-up.
+          - [ ] Track per-tenant patch status in the operational notebook (private repo).
+
+          **Related repo content:**
+
+          - \`vulnerabilities/\` — existing CVE write-ups.
+          - \`hardening/windows-endpoint.md\` — baseline that reduces the blast radius of unpatched CVEs.
+          - \`hardening/nextlayersec-baseline.md\` — non-negotiable patch SLA per tenant.
+
+          ---
+          <sub>Opened automatically by \`.github/workflows/patch-tuesday.yml\` on the second Tuesday of the month.</sub>
+          EOF
+          )
+
+          gh issue create --repo "$REPO" \
+            --title "$TITLE" \
+            --label "vulnerability" \
+            --label "patch-tuesday" \
+            --label "pinned" \
+            --body "$BODY"
+          echo "Opened Patch Tuesday tracking issue for ${MONTH}."
