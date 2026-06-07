@@ -68,7 +68,7 @@ jobs:
           persist-credentials: false
 
       - name: Run OSV-Scanner
-        uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
         with:
           # --recursive walks the tree. Git-root scanning is off by default
           # in v2.0+ (controlled by --include-git-root which we deliberately
