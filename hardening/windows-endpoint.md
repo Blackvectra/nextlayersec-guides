@@ -187,10 +187,10 @@ Per-item validation specified above. For the **overall baseline**:
     ```
 
 - **Atomic Red Team validation suite** — run after Stage 6 in the pilot ring:
-    - `T1003.001` (LSASS dump) — should be blocked by LSA-PPL + Defender + EDR-block
-    - `T1059.001` (encoded PowerShell) — execution blocked by EDR-block, logged by script-block logging
-    - `T1486` (file encryption pattern) — blocked by Controlled Folder Access
-    - `T1547.001` (Run-key persistence) — Run-key write blocked by ASR / WDAC depending on the binary
+  - `T1003.001` (LSASS dump) — should be blocked by LSA-PPL + Defender + EDR-block
+  - `T1059.001` (encoded PowerShell) — execution blocked by EDR-block, logged by script-block logging
+  - `T1486` (file encryption pattern) — blocked by Controlled Folder Access
+  - `T1547.001` (Run-key persistence) — Run-key write blocked by ASR / WDAC depending on the binary
 - **Defender XDR Threat Analytics report** — every report has a "Recommended actions" tab; coverage % rises as you implement.
 
 ## Common pitfalls
