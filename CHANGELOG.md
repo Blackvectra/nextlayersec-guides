@@ -4,6 +4,20 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Changed (security hardening pass — additional findings)
+- **`.gitignore` replaced.** The old file was a leftover C/C++ template with no relevance to this markdown+Python+YAML repo. New file blocks the actual detritus this stack produces: Python (`__pycache__`, `.pytest_cache`, virtual envs), Node (`node_modules` from `npx markdownlint-cli2`), editor/OS (`.vscode`, `.DS_Store`, `Thumbs.db`), local env (`.env`, `*.local`), CI artifacts (`zizmor.sarif`, `results.sarif`), plus the `.seo` / `.ot` / `.OT` extensions per maintainer request.
+- **`requirements-ci.txt` added.** Python dependencies used by the CI workflows (pysigma, zizmor) were inline in the YAML — Dependabot couldn't monitor them. Now tracked in a real file at repo root with the same constraints. `lint.yml` updated to `pip install -r requirements-ci.txt` in both the sigma-validate and zizmor jobs.
+- **`.github/dependabot.yml` extended.** Added the `pip` ecosystem to track `requirements-ci.txt`. Same weekly schedule as the existing github-actions ecosystem. Closes the gap where a pysigma or zizmor advisory could land without a Dependabot PR.
+- **`.github/CODEOWNERS` extended.** Added explicit ownership rules for `/hardening/`, `/incident-reports/`, `/frameworks/`, and `/tools/` so they don't fall through to the catch-all `*` rule. Defense-in-depth — if you ever add other owners with limited paths, these content categories still require you.
+
+### Verified — no fix needed
+- **No hardcoded sensitive values** in `*.py`, `*.yml`, `*.toml`, `*.json` files. No IPs (other than expected GitHub / Microsoft / step-security infrastructure IPs in harden-runner audit logs), no contact emails, no API key / token / password patterns matching the standard scan regexes.
+- **No `pull_request_target` usage** — the GHA security footgun. Only a comment reference in `lint.yml` documenting zizmor's check.
+- **No Python script safety issues** — `subprocess` with `shell=True`, `eval`, `exec`, `os.system`, `yaml.load` (unsafe variant), `pickle.loads` all absent from `scripts/` and `detections/`.
+- **No CI log secret leakage** — no `echo $SECRET` / `echo "${{ secrets.X }}"` patterns anywhere.
+- **No tracked files that shouldn't be** — git ls-files clean for `.env`, `.key`, `.pem`, `secret`, `credential`, `.swp`, `.DS_Store`, `Thumbs.db`, `__pycache__`.
+- **SECURITY.md is adequate** — GitHub Private Vulnerability Reporting + maintainer email both documented; no fix needed.
+
 ### Changed (security hardening pass — concurrency control)
 - **`concurrency:` blocks added** to all seven hand-edited workflows (`lint.yml`, `daily-draft.yml`, `daily-reminder.yml`, `discord-reminder.yml`, `discord-todo-update.yml`, `scorecard.yml`, `todo-sync.yml`). `codeql.yml` skipped (GitHub-managed).
   - **`lint.yml`** uses `cancel-in-progress: true` — a new commit on a PR supersedes the previous in-flight CI run. Cuts wasted minutes on stale runs.
