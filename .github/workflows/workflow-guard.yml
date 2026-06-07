@@ -66,28 +66,34 @@ jobs:
         run: |
           set -euo pipefail
           # Match only actual trigger declarations — NOT comment references.
-          # Trigger forms accepted:
-          #   pull_request_target:           (mapping form under on:)
-          #   - pull_request_target          (list item under on:)
-          #   - pull_request_target:         (list item with subkeys)
-          # Comment lines starting with optional whitespace + '#' are
-          # filtered out. The `[^#]` after the +-prefix prevents '+#'
-          # (an added comment line) from matching.
-          if grep -nE '^\+[[:space:]]*(-[[:space:]]+)?pull_request_target([[:space:]]*:|$)' /tmp/guard/workflow.diff >/tmp/guard/prt-hits.txt; then
-            # Identify which files those added lines belong to.
-            FILES=$(awk '/^\+\+\+ b\// { sub("^\\+\\+\\+ b/", ""); print }' /tmp/guard/workflow.diff)
-            ok=1
-            for f in $FILES; do
-              if [ -f "$f" ] && grep -qE '#\s*guard-allow:\s*pull_request_target' "$f"; then
-                echo "OK   $f — has justification comment"
-              else
-                echo "FAIL $f — introduces pull_request_target without '# guard-allow: pull_request_target — <reason>' comment"
-                ok=0
-              fi
-            done
-            [ $ok -eq 1 ] || exit 1
+          # Awk walks the diff once, tracking the current file via the
+          # `+++ b/<file>` headers, and emits each file that has at least
+          # one added line matching the trigger-declaration shape. Only
+          # those files are checked for the # guard-allow comment;
+          # innocent files with no match are not iterated.
+          mapfile -t FILES_WITH_TRIGGER < <(awk '
+            /^\+\+\+ b\// { sub("^\\+\\+\\+ b/", ""); curr=$0; next }
+            /^\+[[:space:]]*(-[[:space:]]+)?pull_request_target([[:space:]]*:|$)/ {
+              if (!seen[curr]++) print curr
+            }
+          ' /tmp/guard/workflow.diff)
+
+          if [ "${#FILES_WITH_TRIGGER[@]}" -eq 0 ]; then
+            echo "Check 1 PASS — no new pull_request_target trigger."
+            exit 0
           fi
-          echo "Check 1 PASS — no unjustified pull_request_target trigger."
+
+          ok=1
+          for f in "${FILES_WITH_TRIGGER[@]}"; do
+            if [ -f "$f" ] && grep -qE '#\s*guard-allow:\s*pull_request_target' "$f"; then
+              echo "OK   $f — has justification comment"
+            else
+              echo "FAIL $f — introduces pull_request_target without '# guard-allow: pull_request_target — <reason>' comment"
+              ok=0
+            fi
+          done
+          [ $ok -eq 1 ] || exit 1
+          echo "Check 1 PASS — every new pull_request_target trigger is justified."
 
       # --- Check 2: actions not on the allowlist -----------------------------
       - name: Check — actions introduced outside the allowlist
