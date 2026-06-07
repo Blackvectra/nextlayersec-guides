@@ -54,7 +54,7 @@ jobs:
         uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
-          disable-sudo: true
+          disable-sudo-and-containers: true
           disable-file-monitoring: false
 
       - uses: actions/checkout@v6
