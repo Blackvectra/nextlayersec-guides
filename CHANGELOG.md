@@ -4,6 +4,11 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Fixed (real CVE findings surfaced by OSV-Scanner)
+- **`requirements-ci.txt`** — added explicit transitive pin `idna>=3.15` to close GHSA-65pc-fj4g-8rjx (DoS via domains with extremely large numbers of labels). pysigma's transitive chain was pulling in idna 3.9.0 which is vulnerable; the explicit pin forces the resolver to take the fixed version.
+- **`osv-scanner.toml` added** — documented suppression of GHSA-w8v5-vhqr-4h9v (diskcache 5.6.3) with `ignoreUntil = 2026-09-07` (90-day re-review) and a written justification: no fix is published upstream, and pysigma's diskcache use in our CI context is local-only with no attacker-reachable input. Suppression will be revisited every Patch Tuesday until either a fix lands or the threat model changes.
+- **`.github/workflows/osv-scan.yml`** — scan args now include `--config=osv-scanner.toml` so the suppression file is picked up automatically on every run.
+
 ### Added (full security pass — workflow failure notify, Patch Tuesday, Dependabot auto-merge, repo-health, settings runbook)
 - **`.github/workflows/_notify-failure.yml` added (reusable)** — single shared workflow any CI job can call on failure to post a structured Discord embed. Wired into `lint.yml`, `secret-scan.yml`, `osv-scan.yml`, and `scorecard.yml` via the `notify-on-failure` job pattern with `if: failure() && github.event_name != 'pull_request'` (PR failures already surface on the PR; only push-to-main + scheduled failures ping Discord). Closes the silent-failure operational gap.
 - **`.github/workflows/patch-tuesday.yml` added** — fires on the second Tuesday of every month at 14:00 UTC. Cron is `0 14 8-14 * 2` (Tuesday in days 8–14 of the month = second Tuesday by definition). Run-step gates on `date +%u`=2 and `date +%d` between 8 and 14 as a redundant check; workflow_dispatch bypasses the gate. Opens a tracking issue with MSRC + KEV review checklist and a hook to dispatch the Monday CVE lane for the month's high-impact CVEs. Idempotent — title-based dedup.
