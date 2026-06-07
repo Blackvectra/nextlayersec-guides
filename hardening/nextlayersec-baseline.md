@@ -42,7 +42,7 @@ Reference guides like [`entra-id.md`](entra-id.md) and [`windows-endpoint.md`](w
 
 | # | Requirement | Verify | Why |
 |---|---|---|---|
-| 2.1 | **Anti-phishing policy with impersonation protection for the client's executive team AND impersonated-domain protection for the client's primary domain.** | Defender → Email & collaboration → Policies & rules → Anti-phishing → policy exists; impersonated users count ≥ exec team size; impersonated domains include all client domains. | This would have caught the `bchabis.com` pattern in [`IR-2026-06-04-001`](https://github.com/Blackvectra/nextlayersec-incidents) if it had been configured ahead of the incident. |
+| 2.1 | **Anti-phishing policy with impersonation protection for the client's executive team AND impersonated-domain protection for the client's primary domain.** | Defender → Email & collaboration → Policies & rules → Anti-phishing → policy exists; impersonated users count ≥ exec team size; impersonated domains include all client domains. | A real internal incident on file would have been prevented if this policy had been configured ahead of the impersonation campaign — anti-phishing impersonation is the single highest-impact email policy. |
 | 2.2 | **Safe Attachments policy with Dynamic Delivery + Safe Documents.** | Policy exists, `EnableSafeDocs = true`, action = `DynamicDelivery` or `Block`. | Password-protected payload PDFs and attachment-borne droppers. |
 | 2.3 | **Safe Links policy with click-time URL rewriting + tracked URL clicks.** | Policy exists, `IsEnabled = true`, `DeliverMessageAfterScan = true`, `TrackClicks = true`. | Feeds the [`T1566.001 detection`](../detections/kql/T1566.001_attachment-link-credential-harvester.md) on clicker side. |
 | 2.4 | **DMARC published at `p=quarantine` minimum (`p=reject` preferred) on every client-owned sending domain.** | `dig +short TXT _dmarc.<domain>` returns `v=DMARC1; p=quarantine; rua=…` or `p=reject`. | Without DMARC enforcement, your client's brand can be spoofed at zero attacker cost. |
@@ -121,7 +121,7 @@ NextLayerSec's exposure to a single client incident reaches every other client i
 2. **Insurance** — your cyber liability premium is rated against your highest-risk client
 3. **Operational cost** — incident-response work is unbillable past initial scope; a poorly-baselined client is operational debt you can't sell
 
-Each item in this baseline is **already in the threat-intel content of this repo**. The Scattered Spider profile, the AiTM TTP roundup, the bchabis case file — they describe what happens when items in this list are missing. They are not theoretical.
+Each item in this baseline is **already in the threat-intel content of this repo**. The Scattered Spider profile, the AiTM TTP roundup, and internal case files describe what happens when items in this list are missing. They are not theoretical.
 
 ## Related repo content
 
@@ -129,7 +129,7 @@ Each item in this baseline is **already in the threat-intel content of this repo
 - Reference guide: [`hardening/windows-endpoint.md`](windows-endpoint.md) — how to implement Section 3 in detail
 - Threat-intel: [`threat-intelligence/actors/scattered-spider.md`](../threat-intelligence/actors/scattered-spider.md), [`threat-intelligence/ttps/aitm-phishing-kits.md`](../threat-intelligence/ttps/aitm-phishing-kits.md)
 - Framework crosswalk: [`frameworks/nist-csf.md`](../frameworks/nist-csf.md) — every item in this baseline maps to a CSF Subcategory (handy for cyber-insurance evidence packs)
-- Incident reference: `nextlayersec-incidents` repo, `phishing/2026-06-04-bchabis-com.md` — concrete example of what happens when item 2.1 isn't in place
+- Incident reference: internal post-incident records, indexed against the relevant baseline item — every gap in this list has a concrete case-record of what happens when the control isn't in place
 
 ## Maintenance
 

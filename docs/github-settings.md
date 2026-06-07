@@ -147,7 +147,7 @@ The signal drowns in the noise without routing:
 
 - **Mobile push**: high-severity Dependabot + secret scanning + code scanning.
 - **Email digest**: everything else.
-- **Watch level on `nextlayersec-incidents`** (private repo): **All activity** — small repo, every event matters.
+- **Watch level on the private incidents repo**: **All activity** — small repo, every event matters.
 
 ---
 

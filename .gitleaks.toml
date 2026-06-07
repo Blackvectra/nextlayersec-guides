@@ -36,6 +36,12 @@ tags = ["key", "anthropic"]
 # detection-content templates. GitHub native secret scanning + push
 # protection covers Entra client secrets directly via Microsoft's
 # partner-program patterns, so this gap is closed at the platform layer.
+#
+# IMPORTANT: this assumes GitHub push protection is ENABLED for the repo.
+# Verify at Settings → Code security and analysis → Secret scanning →
+# Push protection. If it's disabled, an Entra client secret could be
+# committed and would only be caught by this CI run after the fact.
+# Full settings runbook: docs/github-settings.md section 1.
 
 [[rules]]
 id = "defender-mde-bearer"
