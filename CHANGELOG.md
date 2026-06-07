@@ -4,6 +4,16 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Changed (additional security hardening — harden-runner promoted + persist-credentials gap closed)
+- **`step-security/harden-runner` config promoted** on 16 workflows from `disable-sudo: true` to **`disable-sudo-and-containers: true`** (a stronger flag that ALSO blocks Docker / containerized execution). This shrinks the runner's attack surface: a compromised dependency can no longer pivot via `sudo` OR via spawning a privileged container to break out of the runner's user-namespace sandbox.
+  - Affected: `_notify-failure.yml`, `content-correctness.yml`, `daily-draft.yml`, `daily-reminder.yml`, `dependabot-auto-merge.yml`, `discord-reminder.yml`, `discord-todo-update.yml`, `kev-watch.yml`, `lint.yml` (6 jobs — `markdownlint`, `sigma-validate`, `typos`, `linkcheck`, `zizmor`, `dependency-review`), `patch-tuesday.yml`, `repo-health.yml`, `scorecard.yml`, `secret-scan.yml`, `stale.yml`, `todo-sync.yml`, `workflow-guard.yml`.
+  - Intentionally NOT promoted:
+    - `lint.yml` `yara-validate` job — needs `sudo apt-get install -y yara` and already overrides to `disable-sudo: false`.
+    - `osv-scan.yml` — runs `google/osv-scanner-action` which is a Docker container action (`ghcr.io/google/osv-scanner-action`), so containers must stay enabled.
+    - `codeql.yml` — GitHub-managed default-setup, hand-edits get clobbered.
+- **`persist-credentials: false` gap closed** on `discord-todo-update.yml`. This workflow only reads the diff to post to Discord — it does not push commits — so the persisted git credential was unnecessary attack surface. Other workflows still missing the flag (`daily-draft.yml`, `todo-sync.yml`) legitimately need the credential to push branches / commit, so left as-is.
+- **Zizmor revalidation**: clean at `--min-severity=medium` after the change (4 ignored, 55 suppressed). No findings introduced.
+
 ### Fixed (comprehensive security audit findings)
 - **HIGH — public-repo leak of private incidents repo:** `hardening/nextlayersec-baseline.md` contained an explicit link to the private `nextlayersec-incidents` repo (`https://github.com/Blackvectra/nextlayersec-incidents`) plus a specific client name (`bchabis.com`) plus an internal file path (`phishing/2026-06-04-bchabis-com.md`). All three were a recon target — they confirmed the private repo's existence, named a real tenant, and gave attackers a known path to look for. Redacted to generic language across `nextlayersec-baseline.md` (3 spots) and `docs/github-settings.md` (1 spot).
 - **HIGH — output-data sensitivity for the T1566.001 KQL detection:** the `project` clause exports `Subject` and `RecipientEmailAddress`, both of which can carry sensitive content (HR / legal / M&A vocabulary; small privacy disclosure). Added a new `## Output-data sensitivity` section to `detections/kql/T1566.001_attachment-link-credential-harvester.md` documenting the RBAC trade-off and providing a safe minimal projection alternative. The KQL itself is unchanged — analysts usually need the subject for triage; the tuning guidance lets each org make the right call for their alert pipeline.

@@ -69,7 +69,7 @@ jobs:
         uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
-          disable-sudo: true
+          disable-sudo-and-containers: true
 
       - name: Post to Discord
         env:

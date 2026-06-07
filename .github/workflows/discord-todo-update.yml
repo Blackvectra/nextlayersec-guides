@@ -35,12 +35,14 @@ jobs:
         uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
-          disable-sudo: true
+          disable-sudo-and-containers: true
 
       - uses: actions/checkout@v6
         with:
           # Need the previous commit on main so we can diff TODO.md.
           fetch-depth: 2
+          # Read-only diff; no git push from this workflow.
+          persist-credentials: false
 
       - name: Diff TODO.md and post to Discord
         env:

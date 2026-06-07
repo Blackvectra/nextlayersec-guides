@@ -44,7 +44,7 @@ jobs:
         uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
-          disable-sudo: true
+          disable-sudo-and-containers: true
 
       - name: Fetch Dependabot metadata
         id: meta
