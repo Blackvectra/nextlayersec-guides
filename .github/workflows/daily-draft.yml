@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       lane:
-        description: 'Force lane (cve | detection | playbook | threat-intel | tools | cleanup | review). Blank = auto by weekday.'
+        description: 'Force lane (cve | detection | playbook | threat-intel | tools | cleanup | review | hardening). Blank = auto by weekday. To fire two lanes on one day, dispatch the workflow twice with two different lane values.'
         required: false
         default: ''
 
@@ -218,6 +218,27 @@ jobs:
             4. Run python scripts/sync-todo.py.
             5. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
             6. Branch auto/review-<date>; commit; open a DRAFT PR titled "Draft: weekly review — week of YYYY-MM-DD". Body: paste the new CHANGELOG bullets.
+
+      - name: Lane — Hardening (manual-only)
+        # No scheduled weekday picks 'hardening' — it's available only via
+        # workflow_dispatch with lane=hardening. Pair with another lane on
+        # the same day by dispatching twice.
+        if: steps.prep.outputs.lane == 'hardening'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 50 --model claude-sonnet-4-6 --permission-mode bypassPermissions"
+          prompt: |
+            Draft a new hardening guide.
+            1. Read hardening/README.md and hardening/_template.md to understand the structure.
+            2. Pick the highest-priority unchecked item from TODO.md's "Hardening guides → Backlog (manual)" section that does NOT already have a published file in hardening/.
+            3. Author hardening/<slug>.md following the template. Required sections: scope, prerequisites, why it matters, the baseline (numbered, with name/purpose/settings per item), rollout order (with dependency graph), validation, common pitfalls, reversal plan, framework mapping (MITRE ATT&CK mitigations + techniques addressed, NIST CSF 2.0 Subcategories, ISO 27001:2022 Annex A, CIS Controls v8.1), related repo content, references.
+            4. Mark Maturity: published. Bias toward Windows-MSP environments (Business Premium / E3 / E5, Defender for Endpoint, Entra ID, Intune). Reference specific Microsoft Learn URLs and Intune policy names.
+            5. Cross-link generously to existing detections in detections/kql/ and detections/sigma/, playbooks in blue-team-playbooks/, threat-intel in threat-intelligence/, and the NIST CSF page in frameworks/nist-csf.md.
+            6. Update hardening/README.md index table with the new entry.
+            7. Run python scripts/sync-todo.py.
+            8. Run npx --yes markdownlint-cli2 "**/*.md"; fix anything new.
+            9. Branch auto/hardening-<slug>; commit; open a DRAFT PR titled "Draft: hardening — <topic>". Body: summarize what's covered and call out any tenant-specific assumptions that must be validated before rollout.
 
       # ===== Fact-check + auto-merge gate =====
       # Three layers of protection before anything lands on main:

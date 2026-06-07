@@ -18,6 +18,7 @@ The sync runs:
 |---|---|
 | Detections (techniques covered) | 8 |
 | Playbooks | 3 |
+| Hardening guides | 2 |
 | Detection workflows | 1 |
 | CVE write-ups | 2 |
 | Threat actors profiled | 1 |
@@ -169,6 +170,30 @@ Priority order — top is highest demand for SOC readers.
 - [ ] Second actor profile (suggestion: Lazarus / Konni / FIN7)
 - [ ] First campaign write-up
 - [ ] First TTP roundup (AiTM phishing kits, OAuth consent phishing, AS-REP roasting, MFA fatigue)
+
+---
+
+## Hardening guides
+
+### Shipped (auto)
+
+<!-- BEGIN AUTO: hardening -->
+
+- [x] [Hardening — Microsoft Entra ID: Conditional Access reference baseline](hardening/entra-id.md)
+- [x] [Hardening — Windows endpoint baseline](hardening/windows-endpoint.md)
+
+<!-- END AUTO: hardening -->
+
+### Backlog (manual)
+
+Practical hardening baselines, ordered by leverage for the Windows-MSP target environment.
+
+- [ ] Microsoft 365 — anti-phishing + impersonation (Safe Attachments / SafeLinks, anti-phish policy, TABL strategy)
+- [ ] Defender for Endpoint — baseline configuration (web content filtering, custom indicators, EDR settings)
+- [ ] Intune — device compliance + configuration profiles (Autopilot, compliance policy, app protection)
+- [ ] Network — Tenant Restrictions v2 + DMARC/SPF/DKIM
+- [ ] Azure — Defender for Cloud baselines + Key Vault + Managed Identity
+- [ ] Sentinel — essential analytic rules pack + watchlists + UEBA setup
 
 ---
 
