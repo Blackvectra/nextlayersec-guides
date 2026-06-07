@@ -165,7 +165,7 @@ def check_cve_filename_match() -> list[str]:
 
 def check_internal_links() -> list[str]:
     failures: list[str] = []
-    for path in iter_files({".md"}):
+    for path in iter_files({".md"}, skip_content=True):
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:

@@ -4,6 +4,11 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (operational workflows — KEV watcher + stale automation)
+- **`.github/workflows/kev-watch.yml` added** — daily-scheduled job that diffs the CISA KEV catalog and opens a tracking issue when a newly-listed CVE matches our priority vendors (Microsoft, Fortinet, Cisco, Citrix, Ivanti, Palo Alto, SonicWall, VMware, F5, Progress/MOVEit, ConnectWise, Veeam, Atlassian) AND doesn't already have a write-up in `vulnerabilities/`. Idempotent — re-runs don't duplicate, and an existing open issue with the same title short-circuits. Opens at most one issue per run (highest-priority new entry only) to avoid spam if CISA does a batch add. Directly feeds the Monday CVE lane with prioritized work; the drafter now picks against a curated candidate instead of scanning the full feed cold.
+- **`.github/workflows/stale.yml` added** — issue/PR staleness automation. Issues: 60d idle → `stale` label + comment; +14d → close. PRs decay faster (30d → stale, +7d → close) because the drafter opens new ones every weekday and a 30-day-old PR is almost always dead. Exemptions: anything labeled `pinned` / `security` / `needs-triage` / `in-progress` / `kev`, or anything with an assignee. Daily 02:15 UTC, off-peak. Operation budget of 30/run is enough for this repo's traffic.
+- **`.github/allowed-actions.txt` updated** — comment notes `actions/stale` is now part of the actions/ owner-prefix allowlist.
+
 ### Added (security hardening pass — workflow-protecting + content-correctness CI)
 - **`.github/workflows/workflow-guard.yml` added** — meta-CI that defends the CI surface against three GitHub Actions footguns no existing tool catches all of:
   - **New `pull_request_target` trigger** introduced without an explicit `# guard-allow: pull_request_target — <reason>` justification comment in the same workflow → hard fail. That trigger runs with write-access secrets on BASE-repo code while reviewing untrusted PR code; misuse is the canonical org-takeover footgun.

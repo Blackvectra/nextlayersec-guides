@@ -23,7 +23,7 @@
 # purpose — adding `*` defeats the point of the allowlist.
 
 # --- First-party (GitHub / Anthropic / step-security / OSSF) -----------------
-actions/                          # actions/checkout, actions/setup-python, actions/github-script, actions/upload-artifact
+actions/                          # actions/checkout, actions/setup-python, actions/github-script, actions/upload-artifact, actions/stale
 github/codeql-action              # CodeQL init/analyze/upload-sarif
 step-security/harden-runner       # egress audit
 anthropics/claude-code-action     # daily-draft drafter

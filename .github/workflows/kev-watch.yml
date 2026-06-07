@@ -1,0 +1,207 @@
+# CISA KEV catalog watcher — opens an issue when a newly KEV-listed CVE
+# matches our priority vendors AND doesn't already have a write-up in
+# vulnerabilities/.
+#
+# Why this exists:
+#   - The Monday CVE lane currently lets the drafter pick the CVE. That
+#     picks reasonably but doesn't see "this CVE just landed in KEV
+#     yesterday" as a stronger signal than "this CVE is two weeks old".
+#   - KEV is the gold-standard "actively exploited" feed. Anything that
+#     lands there overnight should be a content priority.
+#   - Opens at most one issue per run (the highest-priority new entry)
+#     to avoid issue spam if CISA does a batch add.
+#
+# Priority vendors (matches case-insensitive substring on the CISA-listed
+# vendorProject field):
+#   - Microsoft, Fortinet, Cisco, Citrix, Ivanti, Palo Alto, SonicWall,
+#     VMware, F5, MOVEit / Progress, ConnectWise, Veeam, Atlassian
+# Anything not on this list is logged but no issue is created.
+#
+# Runs daily at 14:50 UTC. Manual dispatch supported.
+
+name: CISA KEV watcher
+
+on:
+  schedule:
+    - cron: '50 14 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write    # create the watch-issue
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Diff KEV catalog and pick top priority CVE
+        id: pick
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Fetch the current KEV catalog (small, ~1-2 MB JSON).
+          curl -sSfL --max-time 30 \
+            https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json \
+            -o /tmp/kev.json
+
+          # Build the set of CVE IDs we already have write-ups for.
+          # `ls vulnerabilities/CVE-*.md` is intentional — if the file
+          # exists, no issue should be opened.
+          shopt -s nullglob
+          existing=()
+          for f in vulnerabilities/CVE-*.md; do
+            base=$(basename "$f" .md)
+            existing+=("$base")
+          done
+          printf '%s\n' "${existing[@]}" | sort -u > /tmp/have.txt
+          echo "Existing write-ups: $(wc -l < /tmp/have.txt)"
+
+          # Use Python (already on the runner) for the JSON walk. Keeps
+          # the shell free of jq dependency and lets us encode the
+          # priority list cleanly.
+          python3 - <<'PY' > /tmp/pick.json
+          import json, re
+
+          PRIORITY = [
+              "microsoft", "fortinet", "cisco", "citrix", "ivanti",
+              "palo alto", "sonicwall", "vmware", "f5", "progress",
+              "moveit", "connectwise", "veeam", "atlassian",
+          ]
+
+          with open("/tmp/kev.json") as f:
+              kev = json.load(f)
+          with open("/tmp/have.txt") as f:
+              have = {line.strip() for line in f if line.strip()}
+
+          # Sort KEV entries by dateAdded descending. CISA already does this
+          # in the feed but be explicit.
+          entries = sorted(
+              kev.get("vulnerabilities", []),
+              key=lambda v: v.get("dateAdded", ""),
+              reverse=True,
+          )
+
+          # Walk newest-first. First entry that is BOTH on our priority
+          # vendor list AND not already covered wins.
+          pick = None
+          for v in entries:
+              cve = v.get("cveID", "").upper()
+              if not re.fullmatch(r"CVE-\d{4}-\d{4,7}", cve):
+                  continue
+              if cve in have:
+                  continue
+              vendor = v.get("vendorProject", "").lower()
+              if not any(p in vendor for p in PRIORITY):
+                  continue
+              pick = v
+              break
+
+          if pick:
+              print(json.dumps({
+                  "cve": pick["cveID"],
+                  "vendor": pick.get("vendorProject", ""),
+                  "product": pick.get("product", ""),
+                  "name": pick.get("vulnerabilityName", ""),
+                  "date_added": pick.get("dateAdded", ""),
+                  "due_date": pick.get("dueDate", ""),
+                  "required_action": pick.get("requiredAction", ""),
+                  "short_desc": pick.get("shortDescription", ""),
+                  "ransomware": pick.get("knownRansomwareCampaignUse", "Unknown"),
+                  "notes": pick.get("notes", ""),
+              }))
+          else:
+              print("{}")
+          PY
+
+          if [ "$(cat /tmp/pick.json)" = "{}" ]; then
+            echo "No new priority CVE in KEV today. Nothing to do."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          # Multiline output via heredoc-style delimiter.
+          {
+            echo "pick<<KEV_PICK_EOF"
+            cat /tmp/pick.json
+            echo "KEV_PICK_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Open / update tracking issue
+        if: steps.pick.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PICK_JSON: ${{ steps.pick.outputs.pick }}
+        run: |
+          set -euo pipefail
+          # If an open issue with the same CVE title already exists, skip.
+          # Idempotent: re-running the workflow won't duplicate.
+          CVE=$(printf '%s' "$PICK_JSON" | python3 -c 'import sys, json; print(json.load(sys.stdin)["cve"])')
+          TITLE="KEV add: ${CVE} — needs write-up in vulnerabilities/"
+
+          existing=$(gh issue list --repo "$REPO" --state open --search "in:title \"${TITLE}\"" --json number --jq '.[0].number // ""')
+          if [ -n "$existing" ]; then
+            echo "Issue already open for ${CVE} (#${existing}). Skipping."
+            exit 0
+          fi
+
+          # Build the body. Keep it short — the maintainer (or the Monday
+          # CVE drafter) does the actual research; this issue just says
+          # "look here next".
+          BODY=$(python3 - <<'PY'
+          import json, os, textwrap
+          d = json.loads(os.environ["PICK_JSON"])
+          ransom = d["ransomware"]
+          print(textwrap.dedent(f"""\
+              **CVE:** {d['cve']}
+              **Vendor / product:** {d['vendor']} — {d['product']}
+              **CISA-listed name:** {d['name']}
+              **Date added to KEV:** {d['date_added']}
+              **CISA due date (federal):** {d['due_date']}
+              **Known ransomware use:** {ransom}
+
+              **CISA short description:**
+              > {d['short_desc']}
+
+              **Required action (CISA):**
+              > {d['required_action']}
+
+              **Why this issue exists:**
+              The CISA KEV watcher opened this issue because:
+              - {d['cve']} was added to KEV recently.
+              - The vendor matches our priority list (Microsoft / Fortinet / Cisco / Citrix / Ivanti / Palo / SonicWall / VMware / F5 / Progress / MOVEit / ConnectWise / Veeam / Atlassian).
+              - There is no `vulnerabilities/{d['cve']}.md` write-up yet.
+
+              **Next steps:**
+              - [ ] Dispatch the daily-draft workflow with `lane=cve` (the drafter will pick the highest-priority KEV entry — likely this one).
+              - [ ] Or write up manually following `vulnerabilities/template.md`.
+              - [ ] Close this issue once the write-up is merged.
+
+              ---
+              <sub>Opened automatically by `.github/workflows/kev-watch.yml`. Re-runs are idempotent — this is the only issue for {d['cve']}.</sub>
+              """))
+          PY
+          )
+
+          gh issue create --repo "$REPO" \
+            --title "$TITLE" \
+            --label "vulnerability" \
+            --label "kev" \
+            --body "$BODY"
+          echo "Opened tracking issue for ${CVE}."

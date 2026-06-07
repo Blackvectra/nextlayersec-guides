@@ -1,0 +1,76 @@
+# Stale issue / PR closer.
+#
+# Mark + close abandoned activity so the open-issue / open-PR counts
+# reflect what's actually in flight, not what got forgotten.
+#
+# Cadence:
+#   Issues: 60 days idle → 'stale' label + comment; +14 days idle → close.
+#   PRs:    30 days idle → 'stale' label + comment; +7 days idle → close.
+# (PRs decay faster because they have an action attached and the drafter
+# opens new ones every weekday — a 30-day-old PR is almost always dead.)
+#
+# Exemptions (never marked stale):
+#   - Any issue/PR labeled: pinned, security, needs-triage, in-progress, kev
+#   - Any issue/PR with an assignee
+#   - Any closed item (obviously)
+#
+# Runs daily at 02:15 UTC (off-peak; the action paginates the issue API
+# and doesn't compete with the daily-reminder / daily-draft cadence).
+
+name: Stale issues + PRs
+
+on:
+  schedule:
+    - cron: '15 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - uses: actions/stale@v9
+        with:
+          days-before-issue-stale: 60
+          days-before-issue-close: 14
+          days-before-pr-stale: 30
+          days-before-pr-close: 7
+          stale-issue-label: stale
+          stale-pr-label: stale
+          exempt-issue-labels: 'pinned,security,needs-triage,in-progress,kev'
+          exempt-pr-labels: 'pinned,security,needs-triage,in-progress'
+          exempt-all-assignees: true
+          stale-issue-message: >
+            This issue has had no activity for 60 days and is being marked
+            `stale`. Comment within 14 days to keep it open, otherwise it
+            will be closed. To prevent this automatically, apply one of:
+            `pinned`, `security`, `needs-triage`, `in-progress`, or assign
+            it to someone.
+          close-issue-message: >
+            Closing as stale. Reopen if it's still relevant — context is
+            preserved either way.
+          stale-pr-message: >
+            This PR has had no activity for 30 days and is being marked
+            `stale`. Comment, push, or apply a `pinned` / `in-progress`
+            label within 7 days to keep it open.
+          close-pr-message: >
+            Closing as stale. Reopen if you want to pick it back up.
+          # Sort oldest-first so the oldest issue/PR gets the attention
+          # first when the action's daily operation budget is hit.
+          ascending: true
+          # Operation budget — 30 is enough for a low-traffic repo. Raise
+          # only if the action starts skipping items due to budget.
+          operations-per-run: 30
