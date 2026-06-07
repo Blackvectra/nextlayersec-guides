@@ -89,7 +89,7 @@ jobs:
         # Always upload even on failure so findings show up under
         # Security → Code scanning regardless of exit code.
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: results.sarif
           category: osv-scanner
