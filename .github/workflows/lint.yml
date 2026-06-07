@@ -60,7 +60,9 @@ jobs:
         uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
-          disable-sudo: true
+          # Cannot disable-sudo here — this job needs `sudo apt-get install -y yara`
+          # because there's no pre-built YARA action on the marketplace we trust.
+          disable-sudo: false
 
       - uses: actions/checkout@v6
         with:

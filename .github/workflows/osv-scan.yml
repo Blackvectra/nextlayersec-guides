@@ -70,12 +70,12 @@ jobs:
       - name: Run OSV-Scanner
         uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
         with:
-          # --recursive walks the tree; --skip-git avoids re-scanning the
-          # commit graph (we have gitleaks for that). SARIF output goes
-          # to results.sarif for code-scanning upload.
+          # --recursive walks the tree. Git-root scanning is off by default
+          # in v2.0+ (controlled by --include-git-root which we deliberately
+          # do NOT set — gitleaks handles commit-graph scanning). SARIF
+          # output goes to results.sarif for code-scanning upload.
           scan-args: |-
             --recursive
-            --skip-git
             --format=sarif
             --output=results.sarif
             ./

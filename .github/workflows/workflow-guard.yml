@@ -65,11 +65,17 @@ jobs:
       - name: Check — new pull_request_target trigger
         run: |
           set -euo pipefail
-          # Look for added lines mentioning pull_request_target. Allow if an
-          # explicit "# guard-allow: pull_request_target — <reason>" justification
-          # comment is present in the same workflow file.
-          if grep -nE '^\+.*pull_request_target' /tmp/guard/workflow.diff >/tmp/guard/prt-hits.txt; then
-            FILES=$(grep -E '^\+\+\+ b/' /tmp/guard/workflow.diff | sed 's|^+++ b/||')
+          # Match only actual trigger declarations — NOT comment references.
+          # Trigger forms accepted:
+          #   pull_request_target:           (mapping form under on:)
+          #   - pull_request_target          (list item under on:)
+          #   - pull_request_target:         (list item with subkeys)
+          # Comment lines starting with optional whitespace + '#' are
+          # filtered out. The `[^#]` after the +-prefix prevents '+#'
+          # (an added comment line) from matching.
+          if grep -nE '^\+[[:space:]]*(-[[:space:]]+)?pull_request_target([[:space:]]*:|$)' /tmp/guard/workflow.diff >/tmp/guard/prt-hits.txt; then
+            # Identify which files those added lines belong to.
+            FILES=$(awk '/^\+\+\+ b\// { sub("^\\+\\+\\+ b/", ""); print }' /tmp/guard/workflow.diff)
             ok=1
             for f in $FILES; do
               if [ -f "$f" ] && grep -qE '#\s*guard-allow:\s*pull_request_target' "$f"; then
@@ -81,7 +87,7 @@ jobs:
             done
             [ $ok -eq 1 ] || exit 1
           fi
-          echo "Check 1 PASS — no unjustified pull_request_target."
+          echo "Check 1 PASS — no unjustified pull_request_target trigger."
 
       # --- Check 2: actions not on the allowlist -----------------------------
       - name: Check — actions introduced outside the allowlist

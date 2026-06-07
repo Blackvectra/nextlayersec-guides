@@ -34,6 +34,11 @@ extend-ignore-re = [
     "\\bSCCM\\b",
     "\\bSCEP\\b",
     "\\bOCSP\\b",
+    # File extensions referenced literally in docs / .gitignore prose:
+    # `.ot` / `.OT` / `.seo` (per maintainer request, see .gitignore).
+    # The leading dot anchors these to file-extension context only —
+    # bare "ot" in prose still gets caught as a typo.
+    "`\\.(?:ot|OT|seo|SEO)`",
 ]
 
 [default.extend-words]
