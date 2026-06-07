@@ -4,6 +4,17 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Changed (security hardening pass — concurrency control)
+- **`concurrency:` blocks added** to all seven hand-edited workflows (`lint.yml`, `daily-draft.yml`, `daily-reminder.yml`, `discord-reminder.yml`, `discord-todo-update.yml`, `scorecard.yml`, `todo-sync.yml`). `codeql.yml` skipped (GitHub-managed).
+  - **`lint.yml`** uses `cancel-in-progress: true` — a new commit on a PR supersedes the previous in-flight CI run. Cuts wasted minutes on stale runs.
+  - **All other workflows** use `cancel-in-progress: false` — scheduled / long-running, never killed mid-execution. A partial run is worse than waiting for the previous one to finish. Specifically protects the Tier-3 agentic drafter from being cancelled mid-Claude-session (which would burn API credit with no output).
+  - Group key on every workflow is `${{ github.workflow }}-${{ github.ref }}` so concurrent runs are scoped per-branch (PR runs don't block `main` runs).
+
+### Verified — no action needed
+- **`${{ }}` interpolation audit** — no workflow interpolates user-controlled event payload (issue body, comment body, PR title, etc.) directly into a `run:` shell block. The only `github.event.*` reference is `github.event.inputs.lane` in `daily-draft.yml`, and it's assigned to an env var first (`LANE_INPUT: ${{ github.event.inputs.lane }}`) and only referenced as `$LANE_INPUT` from the shell. That's the canonical safe pattern.
+- **Top-level `permissions:` blocks** — every hand-edited workflow has an explicit minimal-permissions block. `codeql.yml` has per-job permissions only (GitHub-managed). No `permissions: write-all` anywhere.
+- **Zizmor** — clean at `--min-severity=medium` after the change (4 ignored, 37 suppressed — both numbers expected and tracked).
+
 ### Added (hardening — new top-level content area)
 - **`hardening/compensating-controls.md`** — companion reference for the baseline exception process. Defines what a real compensating control is (vs. theater) via the five-test rule, lists acceptable temporary / permanent substitutes for the most common baseline gaps (organized by Identity / Email / Endpoint / Backup / Logging), explicitly enumerates common proposals that DO NOT count (user training as MFA substitute, "we have a policy", legacy-auth-for-the-printer, etc.), and specifies the seven documentation items every active compensating control must have on file.
 - **`hardening/nextlayersec-baseline.md`** — **the non-negotiable security baseline** NextLayerSec enforces on every client tenant in production. 6 sections (Identity / Email / Endpoint / Backup / Logging / IR), each item with explicit *what / verify / why / what-if-not*. Audit procedure, two-type exception process (Type A implementation delay, Type B permanent non-conformance with exec sign-off; explicitly no Type C). Documented as cyber-insurance evidence pack and onboarding gate — gaps must remediate within 30 days or the engagement does not proceed. References the reference guides for the *how* and the threat-intel / case-record content for the *why*.

@@ -27,6 +27,12 @@ on:
         required: false
         default: ''
 
+concurrency:
+  # Scheduled / long-running. Don't cancel mid-execution — a partial run is
+  # worse than waiting for the previous run to finish.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write

@@ -18,6 +18,12 @@ on:
   workflow_dispatch:
 
 # Tighten default for all jobs in this workflow.
+concurrency:
+  # Scheduled / long-running. Don't cancel mid-execution — a partial run is
+  # worse than waiting for the previous run to finish.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions: read-all
 
 jobs:
