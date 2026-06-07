@@ -47,4 +47,6 @@ Each guide ends with a **`Verdict` / `Maturity` line** that the author updates w
 
 Stay honest about this. A paper-only hardening guide that's never been tried is worth roughly half a battle-tested one — and the reader needs to know the difference.
 
-## Use [`_template.md`](_template.md) when starting a new guide.
+## Starting a new guide
+
+Use [`_template.md`](_template.md).
