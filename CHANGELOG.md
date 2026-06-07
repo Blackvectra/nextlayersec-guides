@@ -4,6 +4,19 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (security hardening pass — workflow-protecting + content-correctness CI)
+- **`.github/workflows/workflow-guard.yml` added** — meta-CI that defends the CI surface against three GitHub Actions footguns no existing tool catches all of:
+  - **New `pull_request_target` trigger** introduced without an explicit `# guard-allow: pull_request_target — <reason>` justification comment in the same workflow → hard fail. That trigger runs with write-access secrets on BASE-repo code while reviewing untrusted PR code; misuse is the canonical org-takeover footgun.
+  - **New third-party action `uses:` line** introduced that isn't on the explicit allowlist (`.github/allowed-actions.txt`) → hard fail. Forces every new supply-chain dependency through deliberate review.
+  - **New `github.event.*` template expansion** in any workflow change → warning annotation on the PR with line refs so it lands in the conversation, not just SARIF.
+  - Runs only on PRs touching `.github/workflows/` or the allowlist file. Zero overhead on content PRs.
+- **`.github/allowed-actions.txt` added** — canonical list of trusted action publishers (`actions/`, `github/codeql-action`, `step-security/harden-runner`, `anthropics/claude-code-action`, `ossf/scorecard-action`, `google/osv-scanner-action`, `DavidAnson/markdownlint-cli2-action`, `crate-ci/typos`, `lycheeverse/lychee-action`, `gitleaks/gitleaks-action`). Owner-prefix match — version / SHA pin can change without an allowlist update. Becomes the trusted-code manifest once the SHA-pin sweep lands.
+- **`.github/workflows/content-correctness.yml` + `scripts/validate_content.py` added** — quality checks unique to a security-content publication that no existing lint job catches:
+  - **MITRE ATT&CK technique IDs** referenced anywhere in the repo must exist in the current ATT&CK STIX bundle (fetched from `mitre-attack/attack-stix-data`, the live source — NOT the legacy `mitre/cti` mirror). Catches drafter hallucinations, typos, and silently-revoked techniques (ATT&CK v17 revoked `T1562.001` and `T1656`; both flagged and consciously allowlisted as historical Scattered Spider profile references).
+  - **CVE filename ↔ body match** — every `vulnerabilities/CVE-YYYY-NNNNN.md` must reference its declared CVE ID at least once in the body. Catches copy-paste mistakes.
+  - **Internal markdown links** — every `[label](relative/path)` must resolve to an existing file. Lychee handles external URLs; this closes the gap. Path-traversal-safe via `pathlib.resolve()` + `relative_to(REPO_ROOT)` check.
+  - Runs on PRs that touch markdown / detections / vulnerabilities, on push to `main`, and weekly so deprecated ATT&CK IDs get caught even when our content doesn't change.
+
 ### Added (security hardening pass — secret scanning + dependency CVE scanning)
 - **`.github/workflows/secret-scan.yml` added (gitleaks).** Catches first-party mistakes that the existing CI doesn't:
   - GitHub native secret scanning matches a fixed set of provider tokens. gitleaks adds generic-high-entropy + repo-specific patterns (Discord webhook URLs, Anthropic API keys `sk-ant-...`, Defender for Endpoint bearer tokens, Entra application client secrets).

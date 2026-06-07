@@ -1,0 +1,158 @@
+# workflow-guard — defends the CI surface against three GitHub Actions
+# footguns that no other tool in our stack catches *all* of:
+#
+#   1. pull_request_target trigger introduced without justification.
+#      This trigger runs with write-access secrets on the BASE repo's code
+#      while reviewing UNTRUSTED PR code. Misuse → full repo compromise.
+#      Zizmor flags it but at audit severity only by default; we want a
+#      hard fail with required justification.
+#
+#   2. New third-party action introduced that isn't on the allowlist
+#      (.github/allowed-actions.txt). Forces every supply-chain addition
+#      to be a conscious decision.
+#
+#   3. ${{ github.event.* }} interpolation directly inside a `run:` block.
+#      The classic shell-injection sink. Zizmor catches this too; we
+#      duplicate the check with a sharper PR-only diff scope so the signal
+#      lands as a PR comment, not just a SARIF row.
+#
+# Runs on PRs that touch .github/workflows/ only — zero overhead on
+# unrelated PRs.
+
+name: Workflow guard
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - '.github/allowed-actions.txt'
+      - '.github/workflows/workflow-guard.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Compute diff vs base
+        id: diff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/guard
+          git diff --unified=0 "${BASE_SHA}...${HEAD_SHA}" -- '.github/workflows/' > /tmp/guard/workflow.diff
+          echo "diff_lines=$(wc -l < /tmp/guard/workflow.diff)" >> "$GITHUB_OUTPUT"
+
+      # --- Check 1: pull_request_target introductions ------------------------
+      - name: Check — new pull_request_target trigger
+        run: |
+          set -euo pipefail
+          # Look for added lines mentioning pull_request_target. Allow if an
+          # explicit "# guard-allow: pull_request_target — <reason>" justification
+          # comment is present in the same workflow file.
+          if grep -nE '^\+.*pull_request_target' /tmp/guard/workflow.diff >/tmp/guard/prt-hits.txt; then
+            FILES=$(grep -E '^\+\+\+ b/' /tmp/guard/workflow.diff | sed 's|^+++ b/||')
+            ok=1
+            for f in $FILES; do
+              if [ -f "$f" ] && grep -qE '#\s*guard-allow:\s*pull_request_target' "$f"; then
+                echo "OK   $f — has justification comment"
+              else
+                echo "FAIL $f — introduces pull_request_target without '# guard-allow: pull_request_target — <reason>' comment"
+                ok=0
+              fi
+            done
+            [ $ok -eq 1 ] || exit 1
+          fi
+          echo "Check 1 PASS — no unjustified pull_request_target."
+
+      # --- Check 2: actions not on the allowlist -----------------------------
+      - name: Check — actions introduced outside the allowlist
+        run: |
+          set -euo pipefail
+          # Pull added `uses: owner/repo@ref` lines from the diff. Strip @ref
+          # and the optional sub-path so the allowlist can match on owner or
+          # owner/repo. Local `./` actions are ignored.
+          grep -oE '^\+[[:space:]]*-?\s*uses:\s*[^@[:space:]]+' /tmp/guard/workflow.diff \
+            | sed -E 's/^\+[[:space:]]*-?[[:space:]]*uses:[[:space:]]*//' \
+            | grep -v '^\./' \
+            | sort -u > /tmp/guard/new-uses.txt || true
+
+          if [ ! -s /tmp/guard/new-uses.txt ]; then
+            echo "Check 2 PASS — no new action references in this PR."
+            exit 0
+          fi
+
+          # Build the allowlist (strip comments + blank lines + trailing space).
+          sed -E 's/#.*//' .github/allowed-actions.txt \
+            | sed -E 's/[[:space:]]+$//' \
+            | grep -v '^[[:space:]]*$' > /tmp/guard/allow.txt
+
+          fail=0
+          while IFS= read -r action; do
+            owner_repo="$action"
+            owner="${action%%/*}/"
+            # Match either owner-prefix (e.g. "actions/") or owner/repo exact
+            # (e.g. "DavidAnson/markdownlint-cli2-action"), accepting sub-path
+            # actions like "google/osv-scanner-action/osv-scanner-action".
+            if grep -qxF "$owner" /tmp/guard/allow.txt; then
+              echo "OK   $action (owner allowlisted)"
+            elif grep -qxF "$owner_repo" /tmp/guard/allow.txt; then
+              echo "OK   $action (owner/repo allowlisted)"
+            else
+              # Try prefix match for sub-path actions.
+              matched=0
+              while IFS= read -r entry; do
+                case "$action" in
+                  "$entry"|"$entry"/*) matched=1; break ;;
+                esac
+              done < /tmp/guard/allow.txt
+              if [ $matched -eq 1 ]; then
+                echo "OK   $action (prefix allowlisted)"
+              else
+                echo "FAIL $action — not on .github/allowed-actions.txt"
+                fail=1
+              fi
+            fi
+          done < /tmp/guard/new-uses.txt
+          if [ $fail -eq 1 ]; then
+            echo ""
+            echo "::error::A new action was introduced without being added to .github/allowed-actions.txt."
+            echo "::error::Add the publisher to the allowlist in this same PR after verifying the source."
+            exit 1
+          fi
+          echo "Check 2 PASS — every new action is on the allowlist."
+
+      # --- Check 3: github.event.* interpolation in run: blocks --------------
+      - name: Check — event-payload interpolation in run blocks
+        run: |
+          set -euo pipefail
+          # Look for added lines containing github.event.* template
+          # expansions. Best-effort heuristic; zizmor is the authoritative
+          # source. We add value by flagging it in the PR conversation
+          # instead of only in SARIF.
+          if grep -nE '^\+.*\$\{\{\s*github\.event\.' /tmp/guard/workflow.diff >/tmp/guard/interp-hits.txt; then
+            echo "::warning::PR introduces a github.event.* template expansion. Verify it is NOT inside a 'run:' block — assign it to an env: var first and reference the env var from the shell."
+            sed 's/^/  /' /tmp/guard/interp-hits.txt
+            echo ""
+            echo "If the expansion is in an 'env:' block (safe), no action needed. If it's in a 'run:' block, refactor before merge."
+          else
+            echo "Check 3 PASS — no new github.event.* template expansion."
+          fi
