@@ -18,7 +18,7 @@ The sync runs:
 |---|---|
 | Detections (techniques covered) | 8 |
 | Playbooks | 3 |
-| Hardening guides | 3 |
+| Hardening guides | 4 |
 | Detection workflows | 1 |
 | CVE write-ups | 2 |
 | Threat actors profiled | 1 |
@@ -179,6 +179,7 @@ Priority order — top is highest demand for SOC readers.
 
 <!-- BEGIN AUTO: hardening -->
 
+- [x] [Compensating Controls — Reference](hardening/compensating-controls.md)
 - [x] [Hardening — Microsoft Entra ID: Conditional Access reference baseline](hardening/entra-id.md)
 - [x] [NextLayerSec — Non-Negotiable Security Baseline](hardening/nextlayersec-baseline.md)
 - [x] [Hardening — Windows endpoint baseline](hardening/windows-endpoint.md)
