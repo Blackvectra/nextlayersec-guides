@@ -4,6 +4,15 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Changed (security hardening pass — Anthropic credit graceful degradation)
+- **`.github/workflows/daily-draft.yml` pre-flight credit check.** Before invoking the (long-running, expensive) `claude-code-action`, the workflow now makes a 1-token throwaway call to `api.anthropic.com/v1/messages` to verify the account has credit. Three outcomes:
+  - **200 OK** → `have_credit=true`, the lane step runs as normal.
+  - **`credit_balance` / `insufficient` / `quota` / `billing` in the error body** → `have_credit=false`, `skip_reason=insufficient_credit`. All lane steps and the fact-check step skip via `if:` gate. Workflow exits **green** (status: success) with a `::warning::` annotation pointing to https://console.anthropic.com/settings/billing. This is the explicit goal: when the API is out of budget, bypass and show green; resume normally when credit is topped up.
+  - **Missing `ANTHROPIC_API_KEY` secret** → same green-skip behavior with `skip_reason=missing_secret`.
+  - **Any other API error** (auth, network, malformed request) → fail hard. A real problem worth knowing about.
+- **Cost of the pre-flight: ~1 input + 1 output token on Haiku** = roughly $4×10⁻⁷ per run. Effectively free.
+- **Discord notify updated** to distinguish three outcomes: ✅ success (drafter ran end-to-end), ⏭️ skipped (pre-flight detected missing key or insufficient credit; explains the skip reason with the billing-console URL), ⚠️ failure (drafter ran but errored). Previously a credit-balance failure showed up as a generic "drafting run failed" red ping — now it's a yellow "skipped, top up here" ping that's actionable in one click.
+
 ### Changed (security hardening pass — additional findings)
 - **`.gitignore` replaced.** The old file was a leftover C/C++ template with no relevance to this markdown+Python+YAML repo. New file blocks the actual detritus this stack produces: Python (`__pycache__`, `.pytest_cache`, virtual envs), Node (`node_modules` from `npx markdownlint-cli2`), editor/OS (`.vscode`, `.DS_Store`, `Thumbs.db`), local env (`.env`, `*.local`), CI artifacts (`zizmor.sarif`, `results.sarif`), plus the `.seo` / `.ot` / `.OT` extensions per maintainer request.
 - **`requirements-ci.txt` added.** Python dependencies used by the CI workflows (pysigma, zizmor) were inline in the YAML — Dependabot couldn't monitor them. Now tracked in a real file at repo root with the same constraints. `lint.yml` updated to `pip install -r requirements-ci.txt` in both the sigma-validate and zizmor jobs.
