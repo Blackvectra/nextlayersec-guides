@@ -31,13 +31,13 @@ The sync runs:
 
 ## 🔥 Next up (manual — order by what you want to ship)
 
-These are the highest-leverage items not yet shipped. Re-order as priorities shift.
+These are the highest-leverage items not yet shipped. Re-order as priorities shift. **Last refreshed 2026-06-07** — previous five items all shipped during the week of 6/1.
 
-- [ ] **Ransomware-outbreak playbook** — pairs with the existing T1486 detection; biggest content gap.
-- [ ] **Detection: T1071.001 — beacon-like outbound HTTPS to rare destination** — fills the C2 tactic gap.
-- [ ] **Detection: T1078.004 — Entra risky sign-in + mailbox-rule creation** — direct Scattered Spider follow-up.
-- [ ] **YARA syntax check in CI** — finishes the Sigma+YARA validation item.
-- [ ] **First TTP roundup** — AiTM phishing kits or MFA fatigue.
+- [ ] **Detection: T1218.011 — `rundll32.exe` with unusual command line.** Fills the Defense Evasion tactic gap (currently 0 in COVERAGE.md). High-value for Windows endpoints — `rundll32` is one of the top three LOLBins used by every commodity loader and most APTs.
+- [ ] **Detection: T1021.001 — RDP from unusual source.** Fills the Lateral Movement tactic gap (currently 0). Pairs with the suspicious-network playbook already in the repo.
+- [ ] **Per-backend "how to deploy" guides** — Sentinel analytic rule / Defender XDR custom detection / Splunk `savedsearches.conf`. With Sentinel exploration on the roadmap for the maintainer, these turn the 8+ KQL detections from "interesting reading" into "10-minute deploys" for any reader.
+- [ ] **Second actor profile** — FIN7 (financially motivated, well-documented, Windows-aligned) or Lazarus (state-aligned, broader scope). Pairs with the existing Scattered Spider profile and is high-leverage for Windows-MSP client conversations.
+- [ ] **SHA-pin all third-party Actions.** Closes the 49 zizmor `unpinned-uses` findings in a single sweep. Dependabot is already configured to maintain SHA pins once adopted.
 
 ---
 

@@ -4,6 +4,37 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### 📒 Week of 2026-06-01 → 2026-06-07
+
+A productive week — every weekday lane shipped its target, the Tier-3 agentic drafter went live for the first time, the auto-merge-after-fact-check gate landed, and the security hardening pass closed three zero-trust-ish gaps (egress audit on every workflow, dependency review on PRs, zizmor running at medium+). Below is the consolidated view; per-PR detail is in the per-batch sections that follow.
+
+**By the numbers (week):**
+
+- **8 PRs merged.** 13 → 16 detection techniques covered, 2 → 3 playbooks, 0 → 1 threat-intel campaign, 0 → 1 TTP roundup.
+- **The auto-drafter completed 5 of 7 lanes** (Mon CVE failed pre-key, Sat cleanup failed mid-week on credit balance). Tue / Wed / Thu / Fri ran end-to-end with valid PRs.
+- **CSF 2.0 deep-dive** in `frameworks/nist-csf.md` (34 → 190 lines) is the single biggest content piece — pairs the framework's six Functions with the actual repo content in a crosswalk and worked example.
+- **Security CI now blocks merges** for: any new vulnerable dependency (`dependency-review`), any new medium+ zizmor finding, any new typo (with the security-acronym allowlist tuned for our content).
+
+**Shipped detections (week, 3 new + cross-source upgrades):**
+
+- T1078.004 — risky Entra sign-in + mailbox-rule mutation (the canonical post-AiTM signal)
+- T1566.001 — delivered attachment-phish with credential-harvester link on abused hosting
+- (T1071.001, T1486, T1547.001, etc. all already shipped pre-week, COVERAGE.md updated)
+
+**Threat-intel content (week):**
+
+- Campaign: Scattered Spider 2023 casino breaches (the first repo campaign write-up; auto-drafted Thursday)
+- TTP: Adversary-in-the-Middle phishing kits (the first repo TTP roundup)
+
+**Operational signals working:**
+
+- Auto-reminder issue every day at 13:00 UTC ✅
+- Discord daily lane reminder ✅
+- Discord TODO-update on every push that touches `TODO.md` ✅
+- Discord push notification on the (private) incidents repo ✅
+- Tier-3 agentic drafter Tue/Wed/Thu/Fri ✅; Mon/Sat need a credit top-up on the Anthropic Console
+- Auto-merge fact-check gate ✅ (not yet exercised in earnest — drafts have all been small enough to merge by hand)
+
 ### Changed (Saturday cleanup lane)
 - **`harden-runner` extended to read-only workflows.** Added `step-security/harden-runner@v2` (audit mode) to every job in `.github/workflows/lint.yml` (7 jobs: markdownlint, sigma-validate, yara-validate, typos, linkcheck, zizmor, dependency-review) and to `.github/workflows/scorecard.yml`. The write-permission workflows already had it; this closes the gap on the read-only ones so every runner has an outbound-connection audit trail.
 - **Zizmor triaged and gated.** New `.github/zizmor.yml` config: suppresses the tag-pin "blanket policy" noise (49 high-severity findings — tracked separately by the existing "SHA-pin all third-party Actions" TODO item, will be cleared in one motion when Dependabot starts maintaining SHA pins) and excludes the GitHub-managed `codeql.yml` from `artipacked` checks. All medium+ findings fixed by adding `persist-credentials: false` to checkout steps in read-only workflows (lint, daily-reminder, discord-reminder). `discord-todo-update.yml` already had it. `todo-sync.yml` and `daily-draft.yml` intentionally do NOT set `false` because those workflows push commits / open PRs and need the token. Zizmor CI now runs with `--min-severity=medium` (was audit-only) — the build fails on any new medium+ finding.
