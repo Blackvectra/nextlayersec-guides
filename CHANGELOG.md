@@ -4,6 +4,14 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (hardening — new top-level content area)
+- **`hardening/` directory bootstrapped.** New content category: prevention-side baselines that complement the existing detect (detections/) + respond (blue-team-playbooks/) content. Includes `README.md`, `_template.md`, and two substantive first guides.
+- **`hardening/entra-id.md`** — 10-policy Conditional Access reference baseline for Entra ID. Includes the rollout order with dependency graph, validation methods using SigninLogs / What-If tool / repo detections, common pitfalls (break-glass exclusion as #1), reversal plan, and crosswalks to MITRE ATT&CK mitigations (M1032 / M1018 / M1036 / M1028 / M1017), NIST CSF 2.0 Subcategories (PR.AA-01/04/05, DE.AE-02), ISO 27001:2022 (A.5.17, A.8.5, A.8.2), CIS Controls v8.1 (5, 6, 13.6, 16.3). Pairs with the Scattered Spider + AiTM phishing-kit threat intel already in the repo.
+- **`hardening/windows-endpoint.md`** — Windows 10/11 + Server 2019+ endpoint baseline. Covers EDR onboarding + tamper protection, EDR-in-block-mode, ASR rules (the high-impact 8), LSA-PPL, Credential Guard + HVCI, BitLocker with recovery-key escrow, Smart App Control vs. WDAC, Network Protection, Controlled Folder Access, PowerShell module + script-block logging. 7-stage rollout schedule with per-item reversibility classification (Smart App Control is irreversible — flagged as such). Cross-links every endpoint detection in the repo to a control that prevents the attack the detection is for.
+- **`scripts/sync-todo.py`** — discovers `hardening/*.md` and ticks the corresponding TODO section automatically (same auto-sync pattern as detections / playbooks / threat-intel).
+- **`.github/workflows/daily-draft.yml`** — new `hardening` lane (manual-dispatch only). To fire two lanes on a single day, dispatch the workflow twice with different lane values. The hardening prompt instructs the agent to pick from the Hardening backlog, follow the template, and bias toward Microsoft 365 Business Premium / E3 / E5 + Defender for Endpoint + Intune.
+- `TODO.md` — new "Hardening guides" section with auto-sync block + manual backlog (M365 anti-phish, Defender for Endpoint baseline, Intune, Network, Azure, Sentinel essentials).
+
 ### 📒 Week of 2026-06-01 → 2026-06-07
 
 A productive week — every weekday lane shipped its target, the Tier-3 agentic drafter went live for the first time, the auto-merge-after-fact-check gate landed, and the security hardening pass closed three zero-trust-ish gaps (egress audit on every workflow, dependency review on PRs, zizmor running at medium+). Below is the consolidated view; per-PR detail is in the per-batch sections that follow.

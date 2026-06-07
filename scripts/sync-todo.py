@@ -118,6 +118,10 @@ def ttps() -> list[Path]:
     return list_markdown(REPO / "threat-intelligence" / "ttps")
 
 
+def hardening_guides() -> list[Path]:
+    return list_markdown(REPO / "hardening")
+
+
 def labs() -> list[Path]:
     base = REPO / "purple-team-labs"
     if not base.is_dir():
@@ -158,12 +162,13 @@ def render_simple_list(paths: list[Path], empty_msg: str) -> str:
     return "\n".join(out)
 
 
-def render_summary(dets, cs, ps, ws, ac, ca, tt, lb) -> str:
+def render_summary(dets, cs, ps, ws, ac, ca, tt, lb, hg) -> str:
     return (
         "| Area | Shipped |\n"
         "|---|---|\n"
         f"| Detections (techniques covered) | {len(dets)} |\n"
         f"| Playbooks | {len(ps)} |\n"
+        f"| Hardening guides | {len(hg)} |\n"
         f"| Detection workflows | {len(ws)} |\n"
         f"| CVE write-ups | {len(cs)} |\n"
         f"| Threat actors profiled | {len(ac)} |\n"
@@ -237,9 +242,10 @@ def main() -> int:
     dets = detection_files()
     cs, ps, ws = cves(), playbooks(), workflows()
     ac, ca, tt, lb = actors(), campaigns(), ttps(), labs()
+    hg = hardening_guides()
 
     blocks = {
-        "summary": render_summary(dets, cs, ps, ws, ac, ca, tt, lb),
+        "summary": render_summary(dets, cs, ps, ws, ac, ca, tt, lb, hg),
         "detections": render_detections(dets),
         "playbooks": render_simple_list(ps, "_No playbooks shipped yet._"),
         "detection-workflows": render_simple_list(ws, "_No detection workflows shipped yet._"),
@@ -248,6 +254,7 @@ def main() -> int:
         "campaigns": render_simple_list(ca, "_No campaign write-ups shipped yet._"),
         "ttps": render_simple_list(tt, "_No TTP roundups shipped yet._"),
         "labs": render_simple_list(lb, "_No purple-team labs shipped yet._"),
+        "hardening": render_simple_list(hg, "_No hardening guides shipped yet._"),
     }
 
     changed = False
