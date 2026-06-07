@@ -60,13 +60,33 @@ jobs:
       - name: Sync and commit (pushes to main)
         if: github.event_name != 'pull_request'
         run: |
+          set -euo pipefail
           python scripts/sync-todo.py
-          if [ -n "$(git status --porcelain TODO.md)" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add TODO.md
-            git commit -m "chore: auto-sync TODO.md [skip ci]"
-            git push
-          else
+          if [ -z "$(git status --porcelain TODO.md)" ]; then
             echo "TODO.md already in sync."
+            exit 0
           fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add TODO.md
+          git commit -m "chore: auto-sync TODO.md [skip ci]"
+          # Push with rebase-on-conflict retry. If another commit lands
+          # on main between our commit and our push (Dependabot merge,
+          # another auto-sync run on a fresh push, etc.), pull --rebase
+          # and try again. Cap at 3 attempts to avoid an infinite loop
+          # on persistent conflicts (which would indicate a real merge
+          # problem that needs a human).
+          for attempt in 1 2 3; do
+            if git push origin HEAD:"${GITHUB_REF_NAME}"; then
+              echo "Push succeeded on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Push attempt ${attempt} failed — rebasing and retrying."
+            git fetch origin "${GITHUB_REF_NAME}"
+            git rebase "origin/${GITHUB_REF_NAME}" || {
+              echo "::error::Rebase conflict on auto-sync — manual intervention needed."
+              exit 1
+            }
+          done
+          echo "::error::Push failed after 3 attempts."
+          exit 1

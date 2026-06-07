@@ -65,9 +65,16 @@ ATTACK_ID_ALLOWLIST = {
 # attack-stix-data repo, NOT the legacy mitre/cti repo (which is stuck on
 # an older version of the matrix and reports current techniques like
 # T1656 / T1562.001 as missing).
+#
+# Pinned to a release tag (NOT `master`) so a hypothetical compromise of
+# the attack-stix-data repo's default branch cannot inject bogus technique
+# IDs into our allowlist. Re-pin when MITRE publishes a new ATT&CK
+# version — list of tags lives at
+# https://github.com/mitre-attack/attack-stix-data/tags.
+ATTACK_BUNDLE_TAG = "v17.1"
 ATTACK_BUNDLE_URL = (
-    "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/"
-    "enterprise-attack/enterprise-attack.json"
+    f"https://raw.githubusercontent.com/mitre-attack/attack-stix-data/"
+    f"{ATTACK_BUNDLE_TAG}/enterprise-attack/enterprise-attack.json"
 )
 
 TECHNIQUE_RE = re.compile(r"\bT\d{4}(?:\.\d{3})?\b")
@@ -78,6 +85,10 @@ MD_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)#][^)]*?)\)")
 def iter_files(extensions: set[str], skip_content: bool = False):
     for path in REPO_ROOT.rglob("*"):
         if not path.is_file():
+            continue
+        # Defense in depth: skip symlinks so a future committed symlink
+        # can't redirect the validator outside REPO_ROOT.
+        if path.is_symlink():
             continue
         if any(part in SKIP_PATHS for part in path.parts):
             continue
