@@ -4,6 +4,18 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (security hardening pass — secret scanning + dependency CVE scanning)
+- **`.github/workflows/secret-scan.yml` added (gitleaks).** Catches first-party mistakes that the existing CI doesn't:
+  - GitHub native secret scanning matches a fixed set of provider tokens. gitleaks adds generic-high-entropy + repo-specific patterns (Discord webhook URLs, Anthropic API keys `sk-ant-...`, Defender for Endpoint bearer tokens, Entra application client secrets).
+  - PRs run a fast incremental scan; push-to-main + a weekly Monday cron run full-history scans.
+  - Hardened identically to the other workflows (step-security/harden-runner audit, `persist-credentials: false`, minimal permissions, concurrency group).
+- **`.gitleaks.toml` added.** Custom ruleset extends gitleaks' built-in default rules with four repo-specific patterns and a tight allowlist for template / placeholder files (Sigma + YARA templates, playbook examples, hardening template) so the false-positive rate stays at zero.
+- **`.github/workflows/osv-scan.yml` added (OSV-Scanner).** Closes the dependency-monitoring gap:
+  - `dependency-review` only fires on PRs that change the manifest. It doesn't flag existing vulnerable deps already on `main`.
+  - `dependabot` only opens PRs when a newer version exists. It doesn't alert on "your pinned version has a known CVE with no fix yet".
+  - OSV-Scanner scans `requirements-ci.txt` against OSV.dev (which aggregates GHSA, PyPA Advisory DB, OSV-Schema) and fails CI on any unfixed known CVE. SARIF uploaded to Code Scanning so findings land alongside CodeQL + Scorecard + gitleaks alerts.
+  - Runs on PRs that touch `requirements*.txt` / `package*.json` / the workflow itself, on push to `main`, and weekly.
+
 ### Changed (security hardening pass — Anthropic credit graceful degradation)
 - **`.github/workflows/daily-draft.yml` pre-flight credit check.** Before invoking the (long-running, expensive) `claude-code-action`, the workflow now makes a 1-token throwaway call to `api.anthropic.com/v1/messages` to verify the account has credit. Three outcomes:
   - **200 OK** → `have_credit=true`, the lane step runs as normal.

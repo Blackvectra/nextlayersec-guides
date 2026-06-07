@@ -1,0 +1,82 @@
+# gitleaks configuration for nextlayersec-guides.
+#
+# We extend gitleaks' default ruleset (don't replace it) and add a small
+# allowlist for the placeholder tokens that legitimately appear in our
+# templates and detection rules.
+#
+# Editing this file requires running `gitleaks detect --config .gitleaks.toml`
+# locally to confirm the allowlist still matches.
+
+# Inherit gitleaks' built-in default rules. Without this you'd be running
+# with ONLY the custom rules below — losing AWS keys / GitHub tokens /
+# Slack webhooks / etc. detection.
+[extend]
+useDefault = true
+
+# ----------------------------------------------------------------------------
+# Custom rules — patterns specific to this repo / its tenants
+# ----------------------------------------------------------------------------
+
+[[rules]]
+id = "discord-webhook"
+description = "Discord webhook URL (committed by mistake)"
+regex = '''https://(?:ptb\.|canary\.)?discord(?:app)?\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]{60,}'''
+tags = ["webhook", "discord"]
+
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API key"
+regex = '''sk-ant-(?:api|admin)[0-9]{2}-[A-Za-z0-9_-]{80,}'''
+tags = ["key", "anthropic"]
+
+[[rules]]
+id = "azure-tenant-graph-client-secret"
+description = "Azure / Entra application client secret (heuristic — base64 with ~ char)"
+regex = '''[A-Za-z0-9~._-]{34,40}(?=["'\s])'''
+# Heuristic. Keep paths tight — only flag in files where this would be a
+# real misuse (yaml configs, scripts). Markdown content describing secrets
+# (e.g., "the secret looks like Abc123...") would false-positive otherwise.
+path = '''(\.ya?ml|\.json|\.ps1|\.sh|\.env)$'''
+tags = ["secret", "entra", "azure"]
+entropy = 4.0
+
+[[rules]]
+id = "defender-mde-bearer"
+description = "Defender for Endpoint API bearer token (JWT-shaped)"
+regex = '''eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI[A-Za-z0-9_-]{200,}'''
+tags = ["token", "defender", "azure"]
+
+# ----------------------------------------------------------------------------
+# Allowlist — things that look like secrets but are not
+# ----------------------------------------------------------------------------
+[allowlist]
+description = "Repo-wide allowlist: template placeholders + documentation examples"
+
+# Paths where we expect placeholder tokens (sigma/yara templates, example
+# command outputs in playbooks, etc.).
+paths = [
+  '''detections/sigma/_template\.ya?ml''',
+  '''detections/yara/_template\.yara?''',
+  '''vulnerabilities/template\.md''',
+  '''blue-team-playbooks/_template\.md''',
+  '''hardening/_template\.md''',
+  '''threat-intelligence/.*/_template\.md''',
+  # gitleaks itself lives here so its own examples shouldn't self-flag.
+  '''\.gitleaks\.toml''',
+]
+
+# Common placeholder strings we use in examples and template files.
+regexes = [
+  '''<paste[^>]*>''',
+  '''<your[- ][^>]+>''',
+  '''<insert[^>]+>''',
+  '''AAAA{16,}''',                     # padding placeholders in examples
+  '''xxx+''',                          # explicit redactions in playbook excerpts
+  '''REPLACE[_-]ME''',
+  '''EXAMPLE[_-]ONLY''',
+  '''sk-ant-api03-EXAMPLE''',          # documented Anthropic example shape
+  '''https://discord\.com/api/webhooks/EXAMPLE''',
+]
+
+# Specific commits where a false-positive landed historically (none yet).
+# commits = []
