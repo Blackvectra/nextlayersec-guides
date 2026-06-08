@@ -16,7 +16,7 @@ The sync runs:
 
 | Area | Shipped |
 |---|---|
-| Detections (techniques covered) | 8 |
+| Detections (techniques covered) | 9 |
 | Playbooks | 3 |
 | Hardening guides | 4 |
 | Detection workflows | 1 |
@@ -53,6 +53,7 @@ These are the highest-leverage items not yet shipped. Re-order as priorities shi
 | `T1071.001` | Beacon-like Outbound HTTPS to Rare Destination (Sigma) | [✅](detections/kql/T1071.001_beaconing-rare-https.md) | [✅](detections/sigma/T1071.001_beaconing-rare-https.md) |
 | `T1078.004` | Risky Entra sign-in followed by mailbox-rule mutation (Sigma) | [✅](detections/kql/T1078.004_risky-signin-mailbox-rule.md) | [✅](detections/sigma/T1078.004_risky-signin-mailbox-rule.md) |
 | `T1110.003` | Entra ID Password Spray (Sigma) | [✅](detections/kql/T1110.003_entra-password-spray.md) | [✅](detections/sigma/T1110.003_entra-password-spray.md) |
+| `T1218.011` | Rundll32 with Unusual Command Line — Sigma | [✅](detections/kql/T1218.011_rundll32-unusual-cmdline.md) | [✅](detections/sigma/T1218.011_rundll32-unusual-cmdline.md) |
 | `T1486` | Mass File Rename — Ransomware Encryption Canary (Sigma) | [✅](detections/kql/T1486_mass-file-rename-ransomware.md) | [✅](detections/sigma/T1486_mass-file-rename-ransomware.md) |
 | `T1547.001` | Run / RunOnce Key Persistence by Non-Installer | [✅](detections/kql/T1547.001_runkey-persistence.md) | [✅](detections/sigma/T1547.001_runkey-persistence.md) |
 | `T1566.001` | Delivered Phish: Attachment + Credential-Harvester Link on Abused Hosting | [✅](detections/kql/T1566.001_attachment-link-credential-harvester.md) | [✅](detections/sigma/T1566.001_attachment-link-credential-harvester.md) |
