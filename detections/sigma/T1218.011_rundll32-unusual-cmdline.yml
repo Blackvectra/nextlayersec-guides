@@ -1,0 +1,61 @@
+title: Rundll32 with Unusual Command Line
+id: 27610b34-0e55-4544-9c7a-9643a2409b4f
+status: experimental
+description: >-
+  Detects rundll32.exe invocations that exhibit the high-fidelity abuse
+  patterns: protocol-handler bridge (javascript:, vbscript:, data:,
+  mshtml,RunHTMLApplication, url.dll,FileProtocolHandler), DLL loaded
+  from a UNC path or HTTP(S) URL, DLL loaded from a world-writable
+  path (AppData / ProgramData / Public / Temp), DLL with a disguised
+  payload extension (.tmp / .dat / .png / .jpg / .log / .txt / .zip /
+  .bin / .rar / .gif / .ico / .pdf), or rundll32 launched with no
+  command-line arguments at all. Pairs with the matching KQL
+  detection for the per-pattern boolean tags + scoring.
+author: nextlayersec
+date: 2026/06/08
+references:
+  - https://attack.mitre.org/techniques/T1218/011/
+  - https://lolbas-project.github.io/lolbas/Binaries/Rundll32/
+  - https://github.com/Blackvectra/nextlayersec-guides/blob/main/detections/kql/T1218.011_rundll32-unusual-cmdline.md
+tags:
+  - attack.defense-evasion
+  - attack.t1218.011
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  rundll32:
+    Image|endswith: '\rundll32.exe'
+  protocol_bridge:
+    CommandLine|contains:
+      - 'javascript:'
+      - 'vbscript:'
+      - 'data:'
+      - 'mshtml,RunHTMLApplication'
+      - 'url.dll,FileProtocolHandler'
+      - 'url.dll,OpenURL'
+      - 'shell32.dll,ShellExec_RunDLL http'
+  unc_or_http_dll:
+    CommandLine|re: 'rundll32(?:\.exe)?\s+(?:\\\\\\\\|https?://)'
+  writable_path:
+    CommandLine|contains:
+      - '\Users\Public\'
+      - '\AppData\Local\Temp\'
+      - '\AppData\Local\Packages\'
+      - '\AppData\Roaming\'
+      - '\ProgramData\'
+      - '\Windows\Temp\'
+      - '\Temp\'
+      - '%TEMP%'
+      - '%TMP%'
+  weird_extension:
+    CommandLine|re: 'rundll32(?:\.exe)?\s+(?:"[^"]+|\S+)\.(?:tmp|dat|log|png|jpe?g|ico|pdf|txt|zip|gif|bin|rar)(?:\s|,|"|$)'
+  no_args:
+    CommandLine|re: '^\s*(?:"[^"]*\\)?rundll32(?:\.exe)?"?\s*$'
+  condition: rundll32 and (protocol_bridge or unc_or_http_dll or writable_path or weird_extension or no_args)
+falsepositives:
+  - Microsoft-signed UI plumbing — `rundll32 shell32.dll,Control_RunDLL <path-to-cpl>` for a legitimate .cpl from \Windows\System32 launched by control.exe / explorer.exe
+  - Printer / network panels — `rundll32 printui.dll,PrintUIEntry` launched by spoolsv.exe / explorer.exe
+  - Vendor agents (printer / VPN clients) that register rundll32 entries in Run keys — verify signer before allowlisting
+  - Software installers / removers — `msiexec.exe`, legitimate `setup.exe` parents are common false-positive sources for the writable-path branch
+level: medium

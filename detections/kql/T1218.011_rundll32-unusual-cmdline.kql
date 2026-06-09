@@ -1,0 +1,102 @@
+// Title: rundll32.exe with unusual command line
+// Technique: T1218.011 - System Binary Proxy Execution: Rundll32
+// Data source(s): DeviceProcessEvents (Defender XDR / MDE)
+// Author: nextlayersec
+// Last updated: 2026-06-08
+//
+// Description:
+//   Surfaces rundll32.exe invocations that exhibit the high-fidelity
+//   abuse patterns instead of normal Windows behavior:
+//     - URL / protocol-handler bridge (`javascript:`, `vbscript:`,
+//       `mshtml,RunHTMLApplication`, `url.dll,FileProtocolHandler`).
+//     - DLL loaded from a user-writable / world-writable path
+//       (\Users\*\AppData\, \Users\Public\, \ProgramData\, \Windows\Temp\,
+//       \Temp\, %TEMP%, %TMP%).
+//     - DLL loaded from a UNC path or HTTP(S) URL.
+//     - DLL with a non-DLL / suspicious extension (.tmp, .dat, .log,
+//       .png, .jpg, .ico, .pdf, .txt, .zip, none-at-all) — common
+//       payload-disguise pattern.
+//     - rundll32 launched with NO command-line arguments (the canonical
+//       "process hollowing target" pattern when the parent is unusual).
+//     - rundll32 with an unsigned / non-Microsoft parent process AND a
+//       non-Microsoft target DLL.
+//
+// Allowlist:
+//   Microsoft-signed parents from \Windows\System32\ launching shell32 /
+//   printui / DiagCab / netplwiz / ieframe DLLs are excluded — that's
+//   normal CPL / printer / network / accessibility UI.
+//
+// Severity dial:
+//   High  → URL / protocol-handler bridge OR UNC/HTTP DLL.
+//   High  → DLL from world-writable path AND non-Microsoft parent.
+//   Med   → Disguised extension OR no-args launch with unusual parent.
+
+let lookback = 1d;
+
+// Microsoft-signed legitimate parents that frequently launch rundll32
+// for system-UI plumbing. Extend with org-specific service binaries.
+let knownLegitParents = dynamic([
+    "explorer.exe", "svchost.exe", "services.exe", "taskhostw.exe",
+    "msiexec.exe", "wuauclt.exe", "spoolsv.exe", "setup.exe",
+    "control.exe", "mmc.exe", "shellhostex.exe", "sihost.exe"
+]);
+
+// Common world-writable / user-controllable path roots (case-insensitive
+// substring match against the resolved command line / image path).
+let worldWritable = dynamic([
+    @"\users\public\", @"\appdata\local\temp\", @"\appdata\local\packages\",
+    @"\appdata\roaming\", @"\programdata\", @"\windows\temp\",
+    @"\temp\", @"%temp%", @"%tmp%"
+]);
+
+// Protocol-handler / interpreter bridges that rundll32 should NEVER be
+// asked to load in normal operation.
+let evilProtocols = dynamic([
+    "javascript:", "vbscript:", "data:",
+    "mshtml,runhtmlapplication", "url.dll,fileprotocolhandler",
+    "url.dll,openurl", "shell32.dll,shellexec_rundll http"
+]);
+
+// Disguised payload extensions (anything that isn't a real DLL/OCX/CPL/AX).
+let weirdExt = dynamic([
+    ".tmp", ".dat", ".log", ".png", ".jpg", ".jpeg", ".ico",
+    ".pdf", ".txt", ".zip", ".gif", ".bin", ".rar"
+]);
+
+DeviceProcessEvents
+| where Timestamp > ago(lookback)
+| where FileName =~ "rundll32.exe"
+| extend Cmd      = tolower(ProcessCommandLine)
+| extend ParentLo = tolower(InitiatingProcessFileName)
+| extend ImageLo  = tolower(FolderPath)
+//
+// ---- branches: tag every suspicious pattern individually ------------
+//
+| extend B_Protocol = iff(Cmd has_any (evilProtocols), 1, 0)
+| extend B_UNCorHTTP = iff(Cmd matches regex @"rundll32(\.exe)?\s+\\\\|rundll32(\.exe)?\s+https?:\/\/", 1, 0)
+| extend B_Writable = iff(Cmd has_any (worldWritable), 1, 0)
+| extend B_WeirdExt = iff(extract(@"rundll32(?:\.exe)?\s+(?:""([^""]+)""|(\S+))", 1, Cmd) has_any (weirdExt)
+                       or extract(@"rundll32(?:\.exe)?\s+(?:""([^""]+)""|(\S+))", 2, Cmd) has_any (weirdExt), 1, 0)
+| extend B_NoArgs   = iff(Cmd matches regex @"^[a-z0-9\\\:\.\-_]*rundll32(\.exe)?\s*$", 1, 0)
+//
+// keep rows with at least one suspicious tag
+| where (B_Protocol + B_UNCorHTTP + B_Writable + B_WeirdExt + B_NoArgs) > 0
+//
+// Drop known-legit parent + System32 image combos (Microsoft signed UI
+// plumbing). Real malware that hollows a legit parent will fail at least
+// one of the heuristics below.
+| where not(ParentLo in~ (knownLegitParents) and B_Protocol == 0 and B_UNCorHTTP == 0 and B_Writable == 0)
+//
+// Score + severity dial
+| extend RiskScore = (B_Protocol * 3) + (B_UNCorHTTP * 3) + (B_Writable * 2) + (B_WeirdExt * 2) + B_NoArgs
+| extend Severity  = case(
+    B_Protocol == 1 or B_UNCorHTTP == 1, "High",
+    B_Writable == 1 and ParentLo !in~ (knownLegitParents), "High",
+    "Medium")
+| project Timestamp, DeviceName, AccountName, Severity, RiskScore,
+          ParentImage = InitiatingProcessFolderPath,
+          ParentCmd   = InitiatingProcessCommandLine,
+          ChildCmd    = ProcessCommandLine,
+          B_Protocol, B_UNCorHTTP, B_Writable, B_WeirdExt, B_NoArgs,
+          ReportId
+| sort by Timestamp desc

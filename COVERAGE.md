@@ -24,6 +24,7 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Initial Access | T1078.004 Valid Accounts: Cloud Accounts | | [KQL](detections/kql/T1078.004_risky-signin-mailbox-rule.md) · [Sigma](detections/sigma/T1078.004_risky-signin-mailbox-rule.md) | | | |
 | Credential Access | T1003.001 LSASS Memory | | [KQL](detections/kql/T1003.001_lsass-access-suspicious.md) · [Sigma](detections/sigma/T1003.001_lsass-access-suspicious.md) | | | |
 | Credential Access | T1110.003 Password Spraying | | [KQL](detections/kql/T1110.003_entra-password-spray.md) · [Sigma](detections/sigma/T1110.003_entra-password-spray.md) | | | |
+| Defense Evasion | T1218.011 Rundll32 | | [KQL](detections/kql/T1218.011_rundll32-unusual-cmdline.md) · [Sigma](detections/sigma/T1218.011_rundll32-unusual-cmdline.md) | | | |
 | Defense Evasion / Persistence | _various_ | | | [incident-response-suspicious-network](blue-team-playbooks/incident-response-suspicious-network.md) | | |
 | Impact | T1486 Data Encrypted for Impact | | [KQL](detections/kql/T1486_mass-file-rename-ransomware.md) · [Sigma](detections/sigma/T1486_mass-file-rename-ransomware.md) | [ransomware-outbreak](blue-team-playbooks/ransomware-outbreak.md) | | |
 
@@ -43,7 +44,7 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Execution (TA0002) | 1 | 0 | 1 | 0 |
 | Persistence (TA0003) | 1 | 0 | 0 | 0 |
 | Privilege Escalation (TA0004) | 0 | 0 | 0 | 0 |
-| Defense Evasion (TA0005) | 0 | 0 | 0 | 0 |
+| Defense Evasion (TA0005) | 1 | 0 | 0 | 0 |
 | Credential Access (TA0006) | 2 | 0 | 0 | 0 |
 | Discovery (TA0007) | 0 | 0 | 0 | 0 |
 | Lateral Movement (TA0008) | 0 | 0 | 0 | 0 |
