@@ -25,6 +25,7 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Credential Access | T1003.001 LSASS Memory | | [KQL](detections/kql/T1003.001_lsass-access-suspicious.md) · [Sigma](detections/sigma/T1003.001_lsass-access-suspicious.md) | | | |
 | Credential Access | T1110.003 Password Spraying | | [KQL](detections/kql/T1110.003_entra-password-spray.md) · [Sigma](detections/sigma/T1110.003_entra-password-spray.md) | | | |
 | Defense Evasion | T1218.011 Rundll32 | | [KQL](detections/kql/T1218.011_rundll32-unusual-cmdline.md) · [Sigma](detections/sigma/T1218.011_rundll32-unusual-cmdline.md) | | | |
+| Lateral Movement | T1021.001 Remote Desktop Protocol | | [KQL](detections/kql/T1021.001_rdp-unusual-source.md) · [Sigma](detections/sigma/T1021.001_rdp-unusual-source.md) | [credential-theft-password-spray](blue-team-playbooks/credential-theft-password-spray.md) · [incident-response-suspicious-network](blue-team-playbooks/incident-response-suspicious-network.md) | | |
 | Defense Evasion / Persistence | _various_ | | | [incident-response-suspicious-network](blue-team-playbooks/incident-response-suspicious-network.md) | | |
 | Impact | T1486 Data Encrypted for Impact | | [KQL](detections/kql/T1486_mass-file-rename-ransomware.md) · [Sigma](detections/sigma/T1486_mass-file-rename-ransomware.md) | [ransomware-outbreak](blue-team-playbooks/ransomware-outbreak.md) | | |
 
@@ -33,6 +34,7 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Actor | File |
 |-------|------|
 | Scattered Spider (UNC3944 / Octo Tempest / Muddled Libra) | [threat-intelligence/actors/scattered-spider.md](threat-intelligence/actors/scattered-spider.md) |
+| FIN7 (Carbon Spider / Sangria Tempest / GOLD NIAGARA / Carbanak Group) | [threat-intelligence/actors/fin7.md](threat-intelligence/actors/fin7.md) |
 
 ## Headline coverage by tactic
 
@@ -45,9 +47,9 @@ A row appears only when this repo covers the technique. Pull requests adding cov
 | Persistence (TA0003) | 1 | 0 | 0 | 0 |
 | Privilege Escalation (TA0004) | 0 | 0 | 0 | 0 |
 | Defense Evasion (TA0005) | 1 | 0 | 0 | 0 |
-| Credential Access (TA0006) | 2 | 0 | 0 | 0 |
+| Credential Access (TA0006) | 2 | 1 | 0 | 0 |
 | Discovery (TA0007) | 0 | 0 | 0 | 0 |
-| Lateral Movement (TA0008) | 0 | 0 | 0 | 0 |
+| Lateral Movement (TA0008) | 1 | 1 | 0 | 0 |
 | Collection (TA0009) | 0 | 0 | 0 | 0 |
 | Command & Control (TA0011) | 1 | 0 | 0 | 0 |
 | Exfiltration (TA0010) | 0 | 0 | 0 | 0 |

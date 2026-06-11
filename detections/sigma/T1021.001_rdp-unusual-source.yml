@@ -1,0 +1,36 @@
+title: RDP from Unusual Source
+id: def56dc7-f9f0-471e-9c8a-13fa9d98035e
+status: experimental
+description: >-
+  Detects successful interactive RDP logons (LogonType 10 RemoteInteractive,
+  Windows Security event ID 4624) from a source IP that is in RFC-routable
+  public space (i.e., RDP from the internet). This is one branch of the
+  paired KQL detection — the other two branches (unexpected internal
+  source + success-after-fails burst) require per-environment allowlists
+  and a time-window join, both of which are easier to express in KQL
+  than in portable Sigma. Deploy this Sigma rule as the high-precision
+  branch and use the KQL companion for the loud-but-tuneable internal
+  pivot detection.
+author: nextlayersec
+date: 2026/06/08
+references:
+  - https://attack.mitre.org/techniques/T1021/001/
+  - https://github.com/Blackvectra/nextlayersec-guides/blob/main/detections/kql/T1021.001_rdp-unusual-source.md
+tags:
+  - attack.lateral-movement
+  - attack.t1021.001
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4624
+    LogonType: 10           # RemoteInteractive / RDP
+  external_ip:
+    IpAddress|re: '^(?!10\.|127\.|169\.254\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.|::1|fe80:|fc[0-9a-f]{2}:|fd[0-9a-f]{2}:).+'
+  condition: selection and external_ip
+falsepositives:
+  - Site-to-site partner / vendor maintenance from a fixed public IP — add an `IpAddress` exclusion in your fork.
+  - Penetration testing windows — Red Team source IPs will fire; pause or temporarily allowlist with a calendar-style expiry comment.
+  - Mis-configured admin laptops using a public IP without VPN — fix the policy rather than suppress the alert.
+level: high

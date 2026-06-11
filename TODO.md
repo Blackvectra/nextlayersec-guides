@@ -16,12 +16,12 @@ The sync runs:
 
 | Area | Shipped |
 |---|---|
-| Detections (techniques covered) | 9 |
-| Playbooks | 3 |
+| Detections (techniques covered) | 10 |
+| Playbooks | 4 |
 | Hardening guides | 4 |
 | Detection workflows | 1 |
-| CVE write-ups | 2 |
-| Threat actors profiled | 1 |
+| CVE write-ups | 3 |
+| Threat actors profiled | 2 |
 | Threat-intel campaigns | 1 |
 | Threat-intel TTP roundups | 1 |
 | Purple-team labs | 0 |
@@ -32,13 +32,13 @@ The sync runs:
 
 ## 🔥 Next up (manual — order by what you want to ship)
 
-These are the highest-leverage items not yet shipped. Re-order as priorities shift. **Last refreshed 2026-06-07** — previous five items all shipped during the week of 6/1.
+These are the highest-leverage items not yet shipped. Re-order as priorities shift. **Last refreshed 2026-06-08** — previous list's top four (T1218.011 detection, T1021.001 detection, FIN7 actor profile, week's CVE + playbook) all shipped during the week of 6/8.
 
-- [ ] **Detection: T1218.011 — `rundll32.exe` with unusual command line.** Fills the Defense Evasion tactic gap (currently 0 in COVERAGE.md). High-value for Windows endpoints — `rundll32` is one of the top three LOLBins used by every commodity loader and most APTs.
-- [ ] **Detection: T1021.001 — RDP from unusual source.** Fills the Lateral Movement tactic gap (currently 0). Pairs with the suspicious-network playbook already in the repo.
-- [ ] **Per-backend "how to deploy" guides** — Sentinel analytic rule / Defender XDR custom detection / Splunk `savedsearches.conf`. With Sentinel exploration on the roadmap for the maintainer, these turn the 8+ KQL detections from "interesting reading" into "10-minute deploys" for any reader.
-- [ ] **Second actor profile** — FIN7 (financially motivated, well-documented, Windows-aligned) or Lazarus (state-aligned, broader scope). Pairs with the existing Scattered Spider profile and is high-leverage for Windows-MSP client conversations.
+- [ ] **Per-backend "how to deploy" guides** — Sentinel analytic rule / Defender XDR custom detection / Splunk `savedsearches.conf`. With Sentinel exploration on the roadmap, these turn the 10 KQL detections from "interesting reading" into "10-minute deploys" for any reader. Highest leverage for new readers.
 - [ ] **SHA-pin all third-party Actions.** Closes the 49 zizmor `unpinned-uses` findings in a single sweep. Dependabot is already configured to maintain SHA pins once adopted.
+- [ ] **Promote harden-runner from `audit` to `block` mode** per workflow, with a curated egress allowlist from one week of audit data. Blocks malicious-dependency exfiltration end-to-end.
+- [ ] **Detection: T1053.005 — scheduled task created by non-installer.** Persistence gap (currently 1 covered; T1547.001 only). Pairs with the credential-theft playbook just shipped.
+- [ ] **Detection: T1543.003 — Windows service installed from user-writable path.** Privilege Escalation tactic gap (currently 0). High-fidelity LOLBin-adjacent pattern.
 
 ---
 
@@ -49,6 +49,7 @@ These are the highest-leverage items not yet shipped. Re-order as priorities shi
 | Tech ID | Title | KQL | Sigma |
 |---|---|:---:|:---:|
 | `T1003.001` | Suspicious LSASS Process Access (Sigma) | [✅](detections/kql/T1003.001_lsass-access-suspicious.md) | [✅](detections/sigma/T1003.001_lsass-access-suspicious.md) |
+| `T1021.001` | RDP from Unusual Source — Sigma | [✅](detections/kql/T1021.001_rdp-unusual-source.md) | [✅](detections/sigma/T1021.001_rdp-unusual-source.md) |
 | `T1059.001` | PowerShell Encoded Command Execution (Sigma) | [✅](detections/kql/T1059.001_powershell-encoded-command.md) | [✅](detections/sigma/T1059.001_powershell-encoded-command.md) |
 | `T1071.001` | Beacon-like Outbound HTTPS to Rare Destination (Sigma) | [✅](detections/kql/T1071.001_beaconing-rare-https.md) | [✅](detections/sigma/T1071.001_beaconing-rare-https.md) |
 | `T1078.004` | Risky Entra sign-in followed by mailbox-rule mutation (Sigma) | [✅](detections/kql/T1078.004_risky-signin-mailbox-rule.md) | [✅](detections/sigma/T1078.004_risky-signin-mailbox-rule.md) |
@@ -79,6 +80,7 @@ Techniques worth covering next; tick automatically once a `.kql` or `.yml` lands
 
 <!-- BEGIN AUTO: playbooks -->
 
+- [x] [Playbook: Credential Theft / Password Spray](blue-team-playbooks/credential-theft-password-spray.md)
 - [x] [Incident Response Playbook: Suspicious Network Activity](blue-team-playbooks/incident-response-suspicious-network.md)
 - [x] [Playbook: Phishing Email Triage](blue-team-playbooks/phishing-email-triage.md)
 - [x] [Playbook: Ransomware Outbreak](blue-team-playbooks/ransomware-outbreak.md)
@@ -130,6 +132,7 @@ Priority order — top is highest demand for SOC readers.
 
 - [x] [CVE-2022-0492 — Linux Kernel cgroups v1 `release_agent` Container Escape](vulnerabilities/CVE-2022-0492.md)
 - [x] [CVE-2025-50154 Remediation](vulnerabilities/CVE-2025-50154.md)
+- [x] [CVE-2026-0257 — PAN-OS Authentication Bypass](vulnerabilities/CVE-2026-0257.md)
 
 <!-- END AUTO: cves -->
 
@@ -146,6 +149,7 @@ Priority order — top is highest demand for SOC readers.
 
 <!-- BEGIN AUTO: actors -->
 
+- [x] [Actor: FIN7](threat-intelligence/actors/fin7.md)
 - [x] [Actor: Scattered Spider](threat-intelligence/actors/scattered-spider.md)
 
 <!-- END AUTO: actors -->

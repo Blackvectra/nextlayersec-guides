@@ -1,0 +1,82 @@
+// Title: RDP from unusual source
+// Technique: T1021.001 - Remote Services: Remote Desktop Protocol
+// Data source(s): DeviceLogonEvents (Defender XDR / MDE), SecurityEvent (Windows EVTX)
+// Author: nextlayersec
+// Last updated: 2026-06-08
+//
+// Description:
+//   Surfaces successful RDP logons where the source IP is NOT on the
+//   expected list (helpdesk subnets, jump hosts, admin VPN range,
+//   site-to-site partners). Designed for environments where lateral
+//   movement via stolen creds + RDP is the most common post-breach
+//   pivot.
+//
+//   Three layered tags:
+//     B_External     — source IP is RFC-routable public space (NOT
+//                      RFC1918/CGNAT). RDP from the internet is almost
+//                      never legitimate even when the firewall allows it.
+//     B_UnexpectedInt — source IP is internal but NOT on the allowlist
+//                      of admin subnets / jump hosts.
+//     B_SuccessAfterFails — at least 5 failed logons from the same source
+//                      to the same target within 10 minutes immediately
+//                      before the success.
+//
+//   Severity dial:
+//     High → B_External OR B_SuccessAfterFails
+//     Med  → B_UnexpectedInt without the burst pattern
+
+let lookback = 1d;
+
+// Allowlist — the only IPs / subnets that legitimately establish RDP.
+// EDIT per environment. Empty arrays disable the corresponding branch.
+let adminSubnets = dynamic([
+    "10.10.0.0/24",       // helpdesk admin subnet
+    "10.10.1.0/24",       // engineering admin subnet
+    "10.99.0.0/24"        // admin VPN range
+]);
+let jumpHosts = dynamic([
+    // exact IPs of jump hosts; example: "10.20.5.5", "10.20.5.6"
+]);
+
+DeviceLogonEvents
+| where Timestamp > ago(lookback)
+| where LogonType == "RemoteInteractive"
+| where ActionType == "LogonSuccess"
+| where isnotempty(RemoteIP)
+//
+// Tag external source — anything NOT in RFC1918 / loopback / CGNAT.
+| extend B_External = iff(
+    not(ipv4_is_in_range(RemoteIP, "10.0.0.0/8") or
+        ipv4_is_in_range(RemoteIP, "172.16.0.0/12") or
+        ipv4_is_in_range(RemoteIP, "192.168.0.0/16") or
+        ipv4_is_in_range(RemoteIP, "127.0.0.0/8") or
+        ipv4_is_in_range(RemoteIP, "100.64.0.0/10")), 1, 0)
+//
+// Tag unexpected-internal — RFC1918 but NOT in admin subnets or jump hosts.
+| extend InAdminSubnet = iff(
+    array_length(adminSubnets) > 0
+        and ipv4_is_in_any_range(RemoteIP, adminSubnets), 1, 0)
+| extend InJumpHostList = iff(RemoteIP in (jumpHosts), 1, 0)
+| extend B_UnexpectedInt = iff(B_External == 0 and InAdminSubnet == 0 and InJumpHostList == 0, 1, 0)
+//
+// Tag success-after-fails — preceding 10-minute window per (source,dest).
+| join kind=leftouter (
+    DeviceLogonEvents
+    | where Timestamp > ago(lookback + 10m)
+    | where LogonType == "RemoteInteractive"
+    | where ActionType == "LogonFailed"
+    | summarize FailCount = count() by DeviceName, RemoteIP, bin(Timestamp, 10m)
+  ) on DeviceName, RemoteIP
+| extend B_SuccessAfterFails = iff(FailCount >= 5, 1, 0)
+//
+| where (B_External + B_UnexpectedInt + B_SuccessAfterFails) > 0
+//
+| extend RiskScore = (B_External * 3) + (B_SuccessAfterFails * 3) + (B_UnexpectedInt * 2)
+| extend Severity  = case(
+    B_External == 1 or B_SuccessAfterFails == 1, "High",
+    B_UnexpectedInt == 1, "Medium",
+    "Low")
+| project Timestamp, DeviceName, AccountName, AccountDomain,
+          RemoteIP, RemoteDeviceName, Severity, RiskScore,
+          B_External, B_UnexpectedInt, B_SuccessAfterFails, FailCount, ReportId
+| sort by Timestamp desc
