@@ -4,6 +4,26 @@ All notable changes to this repo are documented here. Format loosely follows [Ke
 
 ## [Unreleased]
 
+### Added (docs site — MkDocs Material on GitHub Pages at docs.nls-assessment.app)
+- **`mkdocs.yml` added** — MkDocs Material site config. Mirrors the repo's information architecture into an explicit `nav:` block (Detections / Playbooks / Hardening / Threat-intel / Vulnerabilities / Frameworks / Tools / Contributing / About). Material features turned on: tabbed top nav, expanded sidebar sections, full-text search with highlighting + suggestions, dark-mode toggle (Material default palette + slate), copy-to-clipboard on code blocks, mermaid diagram support, admonitions for the baseline callouts. Repo-style icons (GitHub fork-corner, edit-pencil + view-eye action buttons on every page).
+- **`requirements-docs.txt` added** — `mkdocs-material>=9.5,<10` + `mkdocs-awesome-pages-plugin>=2.9,<3`. Tracked separately from `requirements-ci.txt` so the lint / sigma-validate / zizmor jobs don't rebuild for docs-dep bumps. Dependabot's `pip` ecosystem at `/` already monitors all `requirements*.txt` so no config change needed.
+- **`scripts/build-docs.sh` added** — stage script. MkDocs forbids `docs_dir` being the config-file parent, so we can't point it at the repo root directly. The script copies the content directories (`detections/`, `hardening/`, `blue-team-playbooks/`, `threat-intelligence/`, `vulnerabilities/`, `frameworks/`, `tools/`, `detection-workflows/`, `purple-team-labs/`, `docs/`) plus root-level pages (`README.md`, `COVERAGE.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`, `LICENSE`) into `_docs/` and mkdocs builds from there. Uses plain `find`+`cp` (no rsync dependency) so it runs on minimal images.
+- **`.github/workflows/docs-deploy.yml` added** — build + deploy to GitHub Pages. Two-job pipeline: `build` (harden-runner audit + disable-sudo-and-containers, checkout, setup-python, install requirements-docs, run `bash scripts/build-docs.sh`, `mkdocs build`, copy CNAME + static assets, `actions/upload-pages-artifact@v4`) → `deploy` (separate job with `pages: write` + `id-token: write` perms, calls `actions/deploy-pages@v4`, environment `github-pages` with the deployed URL). Path-filtered triggers: any `*.md` change, `mkdocs.yml`, `requirements-docs.txt`, `docs-static/**`, `scripts/build-docs.sh`, the workflow itself. Plus weekly Sunday rebuild + manual dispatch. Wired into the failure-notify reusable.
+- **`docs-static/CNAME` added** — `docs.nls-assessment.app`. Copied into the Pages artifact at build time so the custom domain is preserved across every deploy.
+- **`docs-static/robots.txt` added** — allow-all + sitemap pointer.
+- **`.gitignore` extended** — `_docs/` (build staging) + `site/` (mkdocs output).
+- **`README.md` badges** — added `docs.nls-assessment.app` site badge + an inline link to the rendered site at the top of the README.
+
+#### DNS configuration needed (one-time, manual)
+
+The Pages deployment will succeed without DNS but the custom domain won't resolve until you add the DNS records at the registrar / Cloudflare for `nls-assessment.app`:
+
+| Type | Host | Value | TTL |
+|---|---|---|---|
+| `CNAME` | `docs` | `blackvectra.github.io.` | 300 |
+
+Then in the repo: Settings → Pages → Custom domain → `docs.nls-assessment.app` → Save → enable Enforce HTTPS once the cert provisions (~10 min after DNS propagates).
+
 ### Added (Mon CVE — Ivanti Sentry OS Command Injection)
 - **`vulnerabilities/CVE-2026-10520.md`** — Ivanti Sentry OS Command Injection, CISA KEV-listed 2026-06-11. MSP-relevant (Sentry is the mobile-device gateway proxying ActiveSync / EAS / SharePoint for every managed phone). Covers impact (full appliance compromise as Sentry service user, ActiveSync / OAuth token theft, pivot to Exchange / SharePoint / LDAP via stored connector credentials, pivot to MobileIron Cloud, persistence via webshell / cron / systemd), 8-step remediation (emergency patch, restrict mgmt-plane exposure, rotate every appliance credential including SSH keys and connector service accounts, revoke ActiveSync tenant-wide via `Clear-MobileDevice`, audit appliance filesystem for persistence indicators, audit syslog for exploitation signature, consider rebuild on any compromise evidence), detection guidance (anomalous shell-spawn from Sentry service user, POST requests with shell metacharacters, new outbound connections, config-file changes outside admin windows). Framework crosswalk: ATT&CK T1190/T1059.004/T1505.003/T1552.001/T1606.001; NIST CSF 2.0 PR.AA-05 + DE.CM-04 + RS.AN-06 + RS.MI-01 + PR.IR-01. Vendor CVSS and KB number marked TBD-verify pending direct PSIRT access.
 

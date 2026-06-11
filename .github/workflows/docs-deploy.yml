@@ -1,0 +1,133 @@
+# Build the MkDocs Material docs site and deploy it to GitHub Pages.
+#
+# Site lives at https://docs.nls-assessment.app (custom domain — DNS
+# CNAME record points to blackvectra.github.io, and the CNAME file at
+# docs-static/CNAME is copied into the build artifact so Pages serves
+# the custom domain).
+#
+# Triggers:
+#   - Push to main that touches any content file → rebuild + redeploy.
+#   - Manual dispatch for emergency rebuild.
+#   - Weekly scheduled rebuild (Sundays 01:30 UTC) so the "last updated"
+#     plugin's relative times stay fresh and the build catches any
+#     upstream Material theme changes.
+#
+# Permissions:
+#   - contents: read for the build job.
+#   - pages: write + id-token: write on the deploy job for the official
+#     GitHub Pages deploy action.
+
+name: Docs site (deploy)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - 'mkdocs.yml'
+      - 'requirements-docs.txt'
+      - 'docs-static/**'
+      - 'scripts/build-docs.sh'
+      - '.github/workflows/docs-deploy.yml'
+  schedule:
+    - cron: '30 1 * * 0'    # Sundays 01:30 UTC
+  workflow_dispatch:
+
+concurrency:
+  # Only one deploy at a time. cancel-in-progress=true is safe here —
+  # a deploy that gets superseded by a newer one isn't lost, just
+  # outdated; the newer build wins.
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo-and-containers: true
+
+      - uses: actions/checkout@v6
+        with:
+          # Needed for the "last updated" git plugin (if/when we enable
+          # mkdocs-git-revision-date-localized-plugin). Cheap enough to
+          # always fetch full history.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install MkDocs Material
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-docs.txt
+
+      - name: Build MkDocs site
+        run: |
+          mkdocs build --strict=false --site-dir ./site
+
+      - name: Add CNAME for custom domain
+        run: |
+          # docs-static/CNAME is the source of truth. Copy into the
+          # build output so GitHub Pages serves the custom domain.
+          if [ -f docs-static/CNAME ]; then
+            cp docs-static/CNAME ./site/CNAME
+            echo "CNAME contents:"
+            cat ./site/CNAME
+          else
+            echo "::error::docs-static/CNAME not found — the custom-domain Pages config will be cleared on deploy."
+            exit 1
+          fi
+
+      - name: Copy static assets
+        run: |
+          # Any non-markdown static files (favicon, robots.txt, etc.)
+          # live in docs-static/ and get copied into site/ verbatim.
+          if [ -d docs-static ]; then
+            find docs-static -mindepth 1 -maxdepth 1 -type f -not -name CNAME -exec cp {} ./site/ \;
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo-and-containers: true
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
+
+  notify-on-failure:
+    needs: [build, deploy]
+    if: failure() && github.event_name != 'pull_request'
+    uses: ./.github/workflows/_notify-failure.yml
+    with:
+      workflow: ${{ github.workflow }}
+    secrets:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}

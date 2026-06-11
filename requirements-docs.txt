@@ -1,0 +1,15 @@
+# Documentation site dependencies (MkDocs Material).
+#
+# Installed by .github/workflows/docs-deploy.yml. Tracked separately
+# from requirements-ci.txt so Dependabot can manage docs deps without
+# triggering the lint / sigma-validate / zizmor jobs on every bump.
+#
+# Local development: `pip install -r requirements-docs.txt && mkdocs serve`
+# then open http://127.0.0.1:8000/
+
+mkdocs-material>=9.5,<10
+mkdocs-awesome-pages-plugin>=2.9,<3
+
+# Pinned indirectly via mkdocs-material's transitive set:
+#   mkdocs, pymdown-extensions, pygments, jinja2, markdown, click,
+#   ghp-import. Don't pin those directly — let Material resolve them.
