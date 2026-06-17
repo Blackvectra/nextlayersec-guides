@@ -1,8 +1,11 @@
 # NextLayerSec Guides
 
 [![Lint](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/lint.yml)
-[![Auto-sync TODO](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/todo-sync.yml/badge.svg?branch=main)](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/todo-sync.yml)
 [![CodeQL](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Blackvectra/nextlayersec-guides/badge)](https://scorecard.dev/viewer/?uri=github.com/Blackvectra/nextlayersec-guides)
+[![Secret scan](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/secret-scan.yml/badge.svg?branch=main)](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/secret-scan.yml)
+[![OSV-Scanner](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/osv-scan.yml/badge.svg?branch=main)](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/osv-scan.yml)
+[![Auto-sync TODO](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/todo-sync.yml/badge.svg?branch=main)](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/todo-sync.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Code of Conduct](https://img.shields.io/badge/Code%20of%20Conduct-Contributor%20Covenant%202.1-brightgreen.svg)](CODE_OF_CONDUCT.md)
 [![Last commit](https://img.shields.io/github/last-commit/Blackvectra/nextlayersec-guides/main)](https://github.com/Blackvectra/nextlayersec-guides/commits/main)
