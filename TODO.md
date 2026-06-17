@@ -16,11 +16,11 @@ The sync runs:
 
 | Area | Shipped |
 |---|---|
-| Detections (techniques covered) | 10 |
-| Playbooks | 4 |
+| Detections (techniques covered) | 11 |
+| Playbooks | 5 |
 | Hardening guides | 4 |
 | Detection workflows | 1 |
-| CVE write-ups | 3 |
+| CVE write-ups | 4 |
 | Threat actors profiled | 2 |
 | Threat-intel campaigns | 1 |
 | Threat-intel TTP roundups | 1 |
@@ -32,13 +32,13 @@ The sync runs:
 
 ## 🔥 Next up (manual — order by what you want to ship)
 
-These are the highest-leverage items not yet shipped. Re-order as priorities shift. **Last refreshed 2026-06-08** — previous list's top four (T1218.011 detection, T1021.001 detection, FIN7 actor profile, week's CVE + playbook) all shipped during the week of 6/8.
+These are the highest-leverage items not yet shipped. Re-order as priorities shift. **Last refreshed 2026-06-17** — previous list's top items (T1218.011, T1021.001, T1053.005 detections; FIN7 actor profile; credential-theft + cloud-account-compromise playbooks; CVE-2026-0257 PAN-OS + CVE-2026-10520 Ivanti Sentry) shipped over the weeks of 6/1, 6/8, 6/15.
 
-- [ ] **Per-backend "how to deploy" guides** — Sentinel analytic rule / Defender XDR custom detection / Splunk `savedsearches.conf`. With Sentinel exploration on the roadmap, these turn the 10 KQL detections from "interesting reading" into "10-minute deploys" for any reader. Highest leverage for new readers.
+- [ ] **Per-backend "how to deploy" guides** — Sentinel analytic rule / Defender XDR custom detection / Splunk `savedsearches.conf`. With Sentinel exploration on the roadmap, these turn the 11 KQL detections from "interesting reading" into "10-minute deploys" for any reader. Highest leverage for new readers.
 - [ ] **SHA-pin all third-party Actions.** Closes the 49 zizmor `unpinned-uses` findings in a single sweep. Dependabot is already configured to maintain SHA pins once adopted.
 - [ ] **Promote harden-runner from `audit` to `block` mode** per workflow, with a curated egress allowlist from one week of audit data. Blocks malicious-dependency exfiltration end-to-end.
-- [ ] **Detection: T1053.005 — scheduled task created by non-installer.** Persistence gap (currently 1 covered; T1547.001 only). Pairs with the credential-theft playbook just shipped.
 - [ ] **Detection: T1543.003 — Windows service installed from user-writable path.** Privilege Escalation tactic gap (currently 0). High-fidelity LOLBin-adjacent pattern.
+- [ ] **Detection: T1027 — Obfuscated files or information.** Defense Evasion deepening (currently 1 with T1218.011); covers commodity malware packing / encoding patterns.
 
 ---
 
@@ -50,6 +50,7 @@ These are the highest-leverage items not yet shipped. Re-order as priorities shi
 |---|---|:---:|:---:|
 | `T1003.001` | Suspicious LSASS Process Access (Sigma) | [✅](detections/kql/T1003.001_lsass-access-suspicious.md) | [✅](detections/sigma/T1003.001_lsass-access-suspicious.md) |
 | `T1021.001` | RDP from Unusual Source — Sigma | [✅](detections/kql/T1021.001_rdp-unusual-source.md) | [✅](detections/sigma/T1021.001_rdp-unusual-source.md) |
+| `T1053.005` | Scheduled task created or modified by a non-installer process | [✅](detections/kql/T1053.005_scheduled-task-by-non-installer.md) | [✅](detections/sigma/T1053.005_scheduled-task-by-non-installer.md) |
 | `T1059.001` | PowerShell Encoded Command Execution (Sigma) | [✅](detections/kql/T1059.001_powershell-encoded-command.md) | [✅](detections/sigma/T1059.001_powershell-encoded-command.md) |
 | `T1071.001` | Beacon-like Outbound HTTPS to Rare Destination (Sigma) | [✅](detections/kql/T1071.001_beaconing-rare-https.md) | [✅](detections/sigma/T1071.001_beaconing-rare-https.md) |
 | `T1078.004` | Risky Entra sign-in followed by mailbox-rule mutation (Sigma) | [✅](detections/kql/T1078.004_risky-signin-mailbox-rule.md) | [✅](detections/sigma/T1078.004_risky-signin-mailbox-rule.md) |
@@ -80,6 +81,7 @@ Techniques worth covering next; tick automatically once a `.kql` or `.yml` lands
 
 <!-- BEGIN AUTO: playbooks -->
 
+- [x] [Playbook: Cloud Account Compromise (Entra ID / Microsoft 365)](blue-team-playbooks/cloud-account-compromise.md)
 - [x] [Playbook: Credential Theft / Password Spray](blue-team-playbooks/credential-theft-password-spray.md)
 - [x] [Incident Response Playbook: Suspicious Network Activity](blue-team-playbooks/incident-response-suspicious-network.md)
 - [x] [Playbook: Phishing Email Triage](blue-team-playbooks/phishing-email-triage.md)
@@ -133,6 +135,7 @@ Priority order — top is highest demand for SOC readers.
 - [x] [CVE-2022-0492 — Linux Kernel cgroups v1 `release_agent` Container Escape](vulnerabilities/CVE-2022-0492.md)
 - [x] [CVE-2025-50154 Remediation](vulnerabilities/CVE-2025-50154.md)
 - [x] [CVE-2026-0257 — PAN-OS Authentication Bypass](vulnerabilities/CVE-2026-0257.md)
+- [x] [CVE-2026-10520 — Ivanti Sentry OS Command Injection](vulnerabilities/CVE-2026-10520.md)
 
 <!-- END AUTO: cves -->
 

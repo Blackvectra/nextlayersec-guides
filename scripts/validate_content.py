@@ -36,6 +36,8 @@ SKIP_PATHS = {
     ".venv",
     "venv",
     "__pycache__",
+    "_docs",     # MkDocs build staging (gitignored)
+    "site",      # MkDocs build output (gitignored)
 }
 
 # Paths excluded from content-correctness scanning. These are config /
