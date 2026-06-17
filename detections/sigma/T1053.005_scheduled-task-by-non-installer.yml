@@ -1,0 +1,66 @@
+title: Scheduled Task Created or Modified by Non-Installer Process
+id: 28fb2fe2-7c7f-40c2-8595-a2f1223f2799
+status: experimental
+description: >-
+  Detects scheduled-task creation or modification (schtasks.exe /create
+  or /change, at.exe with UNC target, or PowerShell *-ScheduledTask*
+  cmdlets) where the initiating process is NOT on the known-installer
+  allowlist. Pairs with the KQL companion for per-pattern boolean tags
+  (writable-init / unsigned-init / LOLBin-sink) and scoring; this
+  Sigma rule is the portable broad detection.
+author: nextlayersec
+date: 2026/06/11
+references:
+  - https://attack.mitre.org/techniques/T1053/005/
+  - https://lolbas-project.github.io/lolbas/Binaries/Schtasks/
+  - https://github.com/Blackvectra/nextlayersec-guides/blob/main/detections/kql/T1053.005_scheduled-task-by-non-installer.md
+tags:
+  - attack.persistence
+  - attack.t1053.005
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  schtasks_create:
+    Image|endswith: '\schtasks.exe'
+    CommandLine|contains:
+      - '/create'
+      - '/change'
+      - '-create'
+      - '-change'
+  at_legacy:
+    Image|endswith: '\at.exe'
+    CommandLine|re: 'at(?:\.exe)?\s+\\\\'
+  powershell_create:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\powershell_ise.exe'
+      - '\pwsh.exe'
+    CommandLine|contains:
+      - 'New-ScheduledTask'
+      - 'Register-ScheduledTask'
+      - 'Set-ScheduledTask'
+  legit_installer_parent:
+    ParentImage|endswith:
+      - '\msiexec.exe'
+      - '\setup.exe'
+      - '\install.exe'
+      - '\update.exe'
+      - '\GoogleUpdate.exe'
+      - '\edgeupdate.exe'
+      - '\TeamsUpdate.exe'
+      - '\OfficeClickToRun.exe'
+      - '\TrustedInstaller.exe'
+      - '\wuauclt.exe'
+      - '\wusa.exe'
+      - '\CcmExec.exe'
+      - '\IntuneManagementExtension.exe'
+      - '\choco.exe'
+      - '\chocolatey.exe'
+      - '\winget.exe'
+  condition: (schtasks_create or at_legacy or powershell_create) and not legit_installer_parent
+falsepositives:
+  - In-house deployment / packaging tools (custom MSI wrappers, internal Chocolatey/winget bundles) — add to the `legit_installer_parent` selection in your fork
+  - Vendor agents (printer, VPN, backup) registering service-maintenance tasks — verify signer before allowlisting
+  - Developer / IT-automation workflows that legitimately register tasks from PowerShell — tune per environment
+level: medium

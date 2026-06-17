@@ -1,0 +1,50 @@
+# EditorConfig — https://editorconfig.org
+#
+# Repo-wide editor defaults. Keeps line endings + indentation consistent
+# across editors / IDEs / CI without requiring per-editor config.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+# Markdown — 2-space indent, preserve trailing double-space (hard line
+# break) inside content. Don't trim trailing whitespace on .md files
+# globally; the linter handles intent-preserving trims per-rule.
+[*.md]
+indent_size = 2
+trim_trailing_whitespace = false
+max_line_length = off
+
+# YAML / TOML / JSON — 2-space indent, hard limit on column count
+# disabled (some workflow lines are intentionally long).
+[*.{yml,yaml,toml,json}]
+indent_size = 2
+
+# Python — PEP 8, 4-space indent.
+[*.py]
+indent_size = 4
+max_line_length = 100
+
+# Shell scripts — 2-space indent, no tabs.
+[*.{sh,bash}]
+indent_size = 2
+
+# KQL / SPL / YARA — 4-space indent, no max line length (KQL queries
+# are sometimes wide on purpose).
+[*.{kql,spl,yar,yara}]
+indent_size = 4
+max_line_length = off
+
+# Sigma rules — 2-space indent (YAML), no max line length.
+[detections/sigma/*.yml]
+indent_size = 2
+max_line_length = off
+
+# Makefiles need real tabs — never override.
+[Makefile]
+indent_style = tab

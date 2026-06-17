@@ -1,0 +1,86 @@
+// Title: Scheduled task created or modified by a non-installer process
+// Technique: T1053.005 - Scheduled Task/Job: Scheduled Task
+// Data source(s): DeviceProcessEvents (Defender XDR / MDE),
+//                 SecurityEvent (Windows EVTX 4698/4702 fallback)
+// Author: nextlayersec
+// Last updated: 2026-06-11
+//
+// Description:
+//   Surfaces scheduled task creates / changes that are NOT done by a
+//   known installer / system process. The scheduled-task service is
+//   one of the top three Windows persistence mechanisms; commodity
+//   loaders and most APTs all touch it.
+//
+//   Two-branch design:
+//     - schtasks.exe / at.exe with /create or /change (or the
+//       PowerShell New-ScheduledTask* equivalents) whose initiating
+//       process is NOT on the legitimate-installer allowlist.
+//     - Initiating process from a writable / user-controllable path
+//       (\AppData\, \Public\, \ProgramData\, \Temp\) is auto-high-
+//       severity regardless of allowlist.
+//
+//   Severity dial:
+//     High → initiating process from a world-writable path OR no
+//            signer info on the initiator OR task action invokes a
+//            known LOLBin (powershell, mshta, rundll32, regsvr32,
+//            wmic, msbuild).
+//     Med  → unknown-but-signed initiator outside the allowlist.
+
+let lookback = 1d;
+
+// Known-legit installer / orchestration tooling. EXTEND per environment.
+let knownInstallers = dynamic([
+    "msiexec.exe", "setup.exe", "install.exe", "update.exe",
+    "googleupdate.exe", "edgeupdate.exe", "teamsupdate.exe",
+    "office click-to-run", "officeclicktorun.exe",
+    "trustedinstaller.exe", "wuauclt.exe", "wusa.exe",
+    "ccmexec.exe",           // Configuration Manager (SCCM) client
+    "intunemanagementextension.exe",
+    "chocolatey.exe", "choco.exe",
+    "winget.exe",
+    "duo-msi-installer.exe", "duoauthproxy.exe"
+]);
+let worldWritable = dynamic([
+    @"\users\public\", @"\appdata\local\temp\", @"\appdata\local\packages\",
+    @"\appdata\roaming\", @"\programdata\", @"\windows\temp\",
+    @"\temp\", @"%temp%", @"%tmp%"
+]);
+let lolbinSinks = dynamic([
+    "powershell.exe", "powershell_ise.exe", "pwsh.exe",
+    "mshta.exe", "rundll32.exe", "regsvr32.exe", "regsvcs.exe",
+    "wmic.exe", "msbuild.exe", "cscript.exe", "wscript.exe",
+    "installutil.exe", "msxsl.exe", "presentationhost.exe"
+]);
+
+DeviceProcessEvents
+| where Timestamp > ago(lookback)
+| where (
+      (FileName =~ "schtasks.exe" and ProcessCommandLine has_any ("/create", "/change", "-create", "-change"))
+   or (FileName =~ "at.exe" and ProcessCommandLine matches regex @"at(\.exe)?\s+\\\\")
+   or (FileName in~ ("powershell.exe", "powershell_ise.exe", "pwsh.exe")
+       and ProcessCommandLine has_any ("New-ScheduledTask", "Register-ScheduledTask", "Set-ScheduledTask"))
+)
+| extend Cmd        = tolower(ProcessCommandLine)
+| extend InitName   = tolower(InitiatingProcessFileName)
+| extend InitPath   = tolower(InitiatingProcessFolderPath)
+| extend InitSigner = tolower(coalesce(tostring(InitiatingProcessSignerType), ""))
+//
+// Branch flags
+| extend B_NotInstaller  = iff(not(InitName in~ (knownInstallers)), 1, 0)
+| extend B_WritableInit  = iff(InitPath has_any (worldWritable), 1, 0)
+| extend B_UnsignedInit  = iff(InitSigner == "" or InitSigner == "unknown" or InitSigner == "unsigned", 1, 0)
+| extend B_LolbinSink    = iff(extract(@'(?:/tr|--task-run|TaskRun|/action|/exec)\s+"?([^"\s,]+)', 1, Cmd) has_any (lolbinSinks), 1, 0)
+//
+| where B_NotInstaller == 1
+//
+| extend RiskScore = (B_WritableInit * 3) + (B_UnsignedInit * 2) + (B_LolbinSink * 2) + B_NotInstaller
+| extend Severity  = case(
+    B_WritableInit == 1 or B_UnsignedInit == 1 or B_LolbinSink == 1, "High",
+    "Medium")
+| project Timestamp, DeviceName, AccountName,
+          InitiatingImage = InitiatingProcessFolderPath,
+          InitiatingCmd   = InitiatingProcessCommandLine,
+          ScheduledTaskCmd = ProcessCommandLine,
+          Severity, RiskScore,
+          B_NotInstaller, B_WritableInit, B_UnsignedInit, B_LolbinSink, ReportId
+| sort by Timestamp desc
