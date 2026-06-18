@@ -4,10 +4,12 @@
 # in /docs-static/CNAME → blackvectra.github.io). Built and deployed
 # by .github/workflows/docs-deploy.yml on every push to main.
 #
-# We use the existing repo root as the docs source (docs_dir: '.')
-# rather than copying content into a separate /docs/ tree. Trade-off:
-# we have to maintain an explicit `nav:` block here, but the source-
-# of-truth markdown files stay where readers expect them on GitHub.
+# We can't point docs_dir at the repo root directly (MkDocs forbids
+# docs_dir being the config-file parent). Instead `scripts/build-docs.sh`
+# copies the markdown / static content into `_docs/` first and mkdocs
+# builds from there. The source-of-truth markdown files stay where
+# readers expect them on GitHub; we just have to maintain an explicit
+# `nav:` block here.
 
 site_name: NextLayerSec Guides
 site_description: >-
@@ -23,15 +25,16 @@ copyright: >-
   Find anything wrong? Open an issue or PR.
 
 # Source layout — content lives at the repo root, but MkDocs can't
-# use the config-file parent as docs_dir, so the build workflow copies
-# / rsync's the markdown content into `_docs/` first. See
-# scripts/build-docs.sh for the local-dev convenience wrapper and
-# .github/workflows/docs-deploy.yml for the CI build step.
+# use the config-file parent as docs_dir, so `scripts/build-docs.sh`
+# copies the markdown content into `_docs/` first (plain find+cp, no
+# rsync dependency). See scripts/build-docs.sh for the local-dev
+# convenience wrapper and .github/workflows/docs-deploy.yml for the
+# CI build step.
 docs_dir: _docs
 
 # Files / directories that should NOT be copied into the build source.
-# scripts/build-docs.sh enforces these excludes via rsync; this list is
-# also what gets gitignored.
+# scripts/build-docs.sh enforces these excludes via its find filter;
+# this list is also what gets gitignored.
 exclude_docs: |
   /.github/
   /.git/
@@ -158,6 +161,7 @@ nav:
           - Risky sign-in + mailbox rule (T1078.004): detections/kql/T1078.004_risky-signin-mailbox-rule.md
           - Entra password spray (T1110.003): detections/kql/T1110.003_entra-password-spray.md
           - RDP from unusual source (T1021.001): detections/kql/T1021.001_rdp-unusual-source.md
+          - Scheduled task by non-installer (T1053.005): detections/kql/T1053.005_scheduled-task-by-non-installer.md
           - Rundll32 unusual cmdline (T1218.011): detections/kql/T1218.011_rundll32-unusual-cmdline.md
           - Mass file rename — ransomware (T1486): detections/kql/T1486_mass-file-rename-ransomware.md
           - Run-key persistence (T1547.001): detections/kql/T1547.001_runkey-persistence.md
@@ -169,6 +173,7 @@ nav:
           - Risky sign-in + mailbox rule (T1078.004): detections/sigma/T1078.004_risky-signin-mailbox-rule.md
           - Entra password spray (T1110.003): detections/sigma/T1110.003_entra-password-spray.md
           - RDP from unusual source (T1021.001): detections/sigma/T1021.001_rdp-unusual-source.md
+          - Scheduled task by non-installer (T1053.005): detections/sigma/T1053.005_scheduled-task-by-non-installer.md
           - Rundll32 unusual cmdline (T1218.011): detections/sigma/T1218.011_rundll32-unusual-cmdline.md
           - Mass file rename — ransomware (T1486): detections/sigma/T1486_mass-file-rename-ransomware.md
           - Run-key persistence (T1547.001): detections/sigma/T1547.001_runkey-persistence.md
@@ -179,6 +184,7 @@ nav:
       - Phishing email triage: blue-team-playbooks/phishing-email-triage.md
       - Ransomware outbreak: blue-team-playbooks/ransomware-outbreak.md
       - Credential theft / password spray: blue-team-playbooks/credential-theft-password-spray.md
+      - Cloud account compromise (Entra ID / M365): blue-team-playbooks/cloud-account-compromise.md
       - Suspicious network activity: blue-team-playbooks/incident-response-suspicious-network.md
   - Hardening:
       - Overview: hardening/README.md
@@ -198,6 +204,7 @@ nav:
       - CVE-2022-0492 (Linux cgroups escape): vulnerabilities/CVE-2022-0492.md
       - CVE-2025-50154 (Windows NTLM disclosure): vulnerabilities/CVE-2025-50154.md
       - CVE-2026-0257 (PAN-OS auth bypass): vulnerabilities/CVE-2026-0257.md
+      - CVE-2026-10520 (Ivanti Sentry OS cmd injection): vulnerabilities/CVE-2026-10520.md
   - Frameworks:
       - NIST CSF 2.0: frameworks/nist-csf.md
   - Tools:
