@@ -57,6 +57,10 @@ results.sarif
 dist/
 build/
 
+# --- MkDocs site (built by scripts/build-docs.sh + workflow) ----------------
+_docs/
+site/
+
 # --- File types we want to ignore by extension (per maintainer request) ----
 *.seo
 *.ot

@@ -1,0 +1,231 @@
+# MkDocs configuration — NextLayerSec Guides docs site.
+#
+# Published at https://docs.nls-assessment.app (custom domain, CNAME
+# in /docs-static/CNAME → blackvectra.github.io). Built and deployed
+# by .github/workflows/docs-deploy.yml on every push to main.
+#
+# We can't point docs_dir at the repo root directly (MkDocs forbids
+# docs_dir being the config-file parent). Instead `scripts/build-docs.sh`
+# copies the markdown / static content into `_docs/` first and mkdocs
+# builds from there. The source-of-truth markdown files stay where
+# readers expect them on GitHub; we just have to maintain an explicit
+# `nav:` block here.
+
+site_name: NextLayerSec Guides
+site_description: >-
+  Blue-team playbooks, detection workflows, hardening baselines, and
+  threat-intelligence documentation for SOC teams, MSPs, and students.
+site_url: https://docs.nls-assessment.app/
+site_author: NextLayerSec
+repo_name: Blackvectra/nextlayersec-guides
+repo_url: https://github.com/Blackvectra/nextlayersec-guides
+edit_uri: edit/main/
+copyright: >-
+  &copy; NextLayerSec — content licensed MIT.
+  Find anything wrong? Open an issue or PR.
+
+# Source layout — content lives at the repo root, but MkDocs can't
+# use the config-file parent as docs_dir, so `scripts/build-docs.sh`
+# copies the markdown content into `_docs/` first (plain find+cp, no
+# rsync dependency). See scripts/build-docs.sh for the local-dev
+# convenience wrapper and .github/workflows/docs-deploy.yml for the
+# CI build step.
+docs_dir: _docs
+
+# Files / directories that should NOT be copied into the build source.
+# scripts/build-docs.sh enforces these excludes via its find filter;
+# this list is also what gets gitignored.
+exclude_docs: |
+  /.github/
+  /.git/
+  /.venv/
+  /node_modules/
+  /scripts/
+  /requirements-ci.txt
+  /requirements-docs.txt
+  /osv-scanner.toml
+  /mkdocs.yml
+  /package.json
+  /package-lock.json
+  /.markdownlint*
+  /.typos.toml
+  /.gitleaks.toml
+  /.gitignore
+  /.editorconfig
+  /TODO.md
+
+# Allow validate_content.py to enforce internal-link integrity;
+# MkDocs strict mode would otherwise reject the relative-path links
+# that GitHub renders fine but MkDocs needs to massage.
+strict: false
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - search.share
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+    - content.action.view
+  palette:
+    - scheme: default
+      primary: black
+      accent: red
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: red
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+# Plugins. Keep the list minimal — every added plugin is a new
+# dependency to maintain.
+plugins:
+  - search:
+      separator: '[\s\-\.\_]+'
+  - awesome-pages:
+      collapse_single_pages: true
+      strict: false
+
+# Markdown extensions for the security-content patterns we use
+# (admonitions for "non-negotiable" callouts, code blocks with line
+# numbers + copy, tables, mermaid diagrams, footnotes).
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.keys
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - tables
+  - footnotes
+  - toc:
+      permalink: true
+      permalink_title: Anchor link to this section
+      title: On this page
+  - attr_list
+  - md_in_html
+  - def_list
+  - abbr
+
+# Nav — explicit ordering, mirrors the repo's information architecture
+# without exposing tooling / scripts / CI plumbing.
+nav:
+  - Home: README.md
+  - Coverage map: COVERAGE.md
+  - Detections:
+      - KQL:
+          - LSASS access (T1003.001): detections/kql/T1003.001_lsass-access-suspicious.md
+          - PowerShell encoded (T1059.001): detections/kql/T1059.001_powershell-encoded-command.md
+          - Beaconing rare HTTPS (T1071.001): detections/kql/T1071.001_beaconing-rare-https.md
+          - Risky sign-in + mailbox rule (T1078.004): detections/kql/T1078.004_risky-signin-mailbox-rule.md
+          - Entra password spray (T1110.003): detections/kql/T1110.003_entra-password-spray.md
+          - RDP from unusual source (T1021.001): detections/kql/T1021.001_rdp-unusual-source.md
+          - Scheduled task by non-installer (T1053.005): detections/kql/T1053.005_scheduled-task-by-non-installer.md
+          - Rundll32 unusual cmdline (T1218.011): detections/kql/T1218.011_rundll32-unusual-cmdline.md
+          - Mass file rename — ransomware (T1486): detections/kql/T1486_mass-file-rename-ransomware.md
+          - Run-key persistence (T1547.001): detections/kql/T1547.001_runkey-persistence.md
+          - Phish attachment + harvester (T1566.001): detections/kql/T1566.001_attachment-link-credential-harvester.md
+      - Sigma:
+          - LSASS access (T1003.001): detections/sigma/T1003.001_lsass-access-suspicious.md
+          - PowerShell encoded (T1059.001): detections/sigma/T1059.001_powershell-encoded-command.md
+          - Beaconing rare HTTPS (T1071.001): detections/sigma/T1071.001_beaconing-rare-https.md
+          - Risky sign-in + mailbox rule (T1078.004): detections/sigma/T1078.004_risky-signin-mailbox-rule.md
+          - Entra password spray (T1110.003): detections/sigma/T1110.003_entra-password-spray.md
+          - RDP from unusual source (T1021.001): detections/sigma/T1021.001_rdp-unusual-source.md
+          - Scheduled task by non-installer (T1053.005): detections/sigma/T1053.005_scheduled-task-by-non-installer.md
+          - Rundll32 unusual cmdline (T1218.011): detections/sigma/T1218.011_rundll32-unusual-cmdline.md
+          - Mass file rename — ransomware (T1486): detections/sigma/T1486_mass-file-rename-ransomware.md
+          - Run-key persistence (T1547.001): detections/sigma/T1547.001_runkey-persistence.md
+          - Phish attachment + harvester (T1566.001): detections/sigma/T1566.001_attachment-link-credential-harvester.md
+      - Detection workflows:
+          - PowerShell attacks: detection-workflows/detection-workflow-powershell-attacks.md
+  - Playbooks:
+      - Phishing email triage: blue-team-playbooks/phishing-email-triage.md
+      - Ransomware outbreak: blue-team-playbooks/ransomware-outbreak.md
+      - Credential theft / password spray: blue-team-playbooks/credential-theft-password-spray.md
+      - Cloud account compromise (Entra ID / M365): blue-team-playbooks/cloud-account-compromise.md
+      - Suspicious network activity: blue-team-playbooks/incident-response-suspicious-network.md
+  - Hardening:
+      - Overview: hardening/README.md
+      - Non-negotiable baseline: hardening/nextlayersec-baseline.md
+      - Compensating controls: hardening/compensating-controls.md
+      - Entra ID Conditional Access: hardening/entra-id.md
+      - Windows endpoint: hardening/windows-endpoint.md
+  - Threat intel:
+      - Actors:
+          - Scattered Spider: threat-intelligence/actors/scattered-spider.md
+          - FIN7: threat-intelligence/actors/fin7.md
+      - Campaigns:
+          - Scattered Spider casino 2023: threat-intelligence/campaigns/scattered-spider-casino-2023.md
+      - TTPs:
+          - AiTM phishing kits: threat-intelligence/ttps/aitm-phishing-kits.md
+  - Vulnerabilities:
+      - CVE-2022-0492 (Linux cgroups escape): vulnerabilities/CVE-2022-0492.md
+      - CVE-2025-50154 (Windows NTLM disclosure): vulnerabilities/CVE-2025-50154.md
+      - CVE-2026-0257 (PAN-OS auth bypass): vulnerabilities/CVE-2026-0257.md
+      - CVE-2026-10520 (Ivanti Sentry OS cmd injection): vulnerabilities/CVE-2026-10520.md
+  - Frameworks:
+      - NIST CSF 2.0: frameworks/nist-csf.md
+      - MITRE ATT&CK: frameworks/mitre-attack.md
+      - ISO 27001: frameworks/iso-27001.md
+      - IRS Publication 1075: frameworks/irs-pub-1075.md
+      - SOC 2: frameworks/soc2.md
+  - Tools:
+      - Blue-team tools: tools/blue-team-tools.md
+  - Contributing:
+      - How to contribute: CONTRIBUTING.md
+      - Code of conduct: CODE_OF_CONDUCT.md
+      - Security policy: SECURITY.md
+      - Support: SUPPORT.md
+  - About:
+      - Changelog: CHANGELOG.md
+      - GitHub settings runbook: docs/github-settings.md
+
+# Extras — social cards, version selector hooks for future use.
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Blackvectra/nextlayersec-guides
+      name: GitHub repository
+  generator: false   # remove "Made with Material for MkDocs" footer line

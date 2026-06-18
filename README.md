@@ -1,5 +1,6 @@
 # NextLayerSec Guides
 
+[![Docs](https://img.shields.io/badge/docs-docs.nls--assessment.app-black?logo=readthedocs&logoColor=white)](https://docs.nls-assessment.app/)
 [![Lint](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/lint.yml)
 [![CodeQL](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/Blackvectra/nextlayersec-guides/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Blackvectra/nextlayersec-guides/badge)](https://scorecard.dev/viewer/?uri=github.com/Blackvectra/nextlayersec-guides)
@@ -9,6 +10,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Code of Conduct](https://img.shields.io/badge/Code%20of%20Conduct-Contributor%20Covenant%202.1-brightgreen.svg)](CODE_OF_CONDUCT.md)
 [![Last commit](https://img.shields.io/github/last-commit/Blackvectra/nextlayersec-guides/main)](https://github.com/Blackvectra/nextlayersec-guides/commits/main)
+
+**Browse the rendered site:** **[docs.nls-assessment.app](https://docs.nls-assessment.app/)** — MkDocs Material with full-text search, dark mode, and the same content as this repo.
 
 Comprehensive blue-team playbooks, detection workflows, purple-team lab guidance, and threat intelligence documentation designed for SOC teams, cybersecurity professionals, and students.  
 
