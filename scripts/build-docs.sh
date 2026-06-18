@@ -35,6 +35,7 @@ for d in \
     tools \
     detection-workflows \
     purple-team-labs \
+    incident-reports \
     docs ; do
   if [ -d "${d}" ]; then
     while IFS= read -r -d '' f; do
