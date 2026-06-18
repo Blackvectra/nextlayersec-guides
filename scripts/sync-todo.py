@@ -26,44 +26,32 @@ files in place.
 from __future__ import annotations
 
 import argparse
-import os
 import re
 import sys
 from collections import Counter
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
-TODO = REPO / "TODO.md"
-COVERAGE = REPO / "COVERAGE.md"
+from _shared import REPO_ROOT, TECHNIQUE_ID_RE, list_markdown, title_of
+
+TODO = REPO_ROOT / "TODO.md"
+COVERAGE = REPO_ROOT / "COVERAGE.md"
 
 # ---------------------------------------------------------------------------
 # Discovery
 # ---------------------------------------------------------------------------
 
-TID_RE = re.compile(r"T(\d{4}(?:\.\d{3})?)")
-TITLE_RE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
-
-
-def title_of(md_path: Path) -> str:
-    try:
-        m = TITLE_RE.search(md_path.read_text(encoding="utf-8"))
-        return m.group(1).strip() if m else md_path.stem
-    except Exception:
-        return md_path.stem
-
-
 def detection_files() -> dict[str, dict]:
     """Group detection files by ATT&CK technique id."""
     out: dict[str, dict] = {}
     for backend in ("kql", "sigma"):
-        d = REPO / "detections" / backend
+        d = REPO_ROOT / "detections" / backend
         if not d.is_dir():
             continue
         for md in sorted(d.glob("T*.md")):
             if md.name.startswith("_"):
                 continue
             stem = md.stem
-            m = TID_RE.match(stem)
+            m = TECHNIQUE_ID_RE.match(stem)
             if not m:
                 continue
             tid = m.group(0)
@@ -71,7 +59,7 @@ def detection_files() -> dict[str, dict]:
                 tid,
                 {"id": tid, "title": stem.split("_", 1)[1] if "_" in stem else stem, "backends": {}},
             )
-            entry["backends"][backend] = md.relative_to(REPO).as_posix()
+            entry["backends"][backend] = md.relative_to(REPO_ROOT).as_posix()
             # Prefer the longest human title we see.
             t = title_of(md)
             if len(t) > len(entry["title"]):
@@ -79,51 +67,36 @@ def detection_files() -> dict[str, dict]:
     return out
 
 
-def list_markdown(dir_path: Path, predicate=None) -> list[Path]:
-    if not dir_path.is_dir():
-        return []
-    files = []
-    for p in sorted(dir_path.glob("*.md")):
-        if p.name.startswith("_"):
-            continue
-        if p.name.lower() == "readme.md":
-            continue
-        if predicate and not predicate(p):
-            continue
-        files.append(p)
-    return files
-
-
 def cves() -> list[Path]:
-    return [p for p in list_markdown(REPO / "vulnerabilities") if p.name.upper().startswith("CVE-")]
+    return [p for p in list_markdown(REPO_ROOT / "vulnerabilities") if p.name.upper().startswith("CVE-")]
 
 
 def playbooks() -> list[Path]:
-    return list_markdown(REPO / "blue-team-playbooks")
+    return list_markdown(REPO_ROOT / "blue-team-playbooks")
 
 
 def workflows() -> list[Path]:
-    return list_markdown(REPO / "detection-workflows")
+    return list_markdown(REPO_ROOT / "detection-workflows")
 
 
 def actors() -> list[Path]:
-    return list_markdown(REPO / "threat-intelligence" / "actors")
+    return list_markdown(REPO_ROOT / "threat-intelligence" / "actors")
 
 
 def campaigns() -> list[Path]:
-    return list_markdown(REPO / "threat-intelligence" / "campaigns")
+    return list_markdown(REPO_ROOT / "threat-intelligence" / "campaigns")
 
 
 def ttps() -> list[Path]:
-    return list_markdown(REPO / "threat-intelligence" / "ttps")
+    return list_markdown(REPO_ROOT / "threat-intelligence" / "ttps")
 
 
 def hardening_guides() -> list[Path]:
-    return list_markdown(REPO / "hardening")
+    return list_markdown(REPO_ROOT / "hardening")
 
 
 def labs() -> list[Path]:
-    base = REPO / "purple-team-labs"
+    base = REPO_ROOT / "purple-team-labs"
     if not base.is_dir():
         return []
     out = []
@@ -157,7 +130,7 @@ def render_simple_list(paths: list[Path], empty_msg: str) -> str:
         return empty_msg
     out = []
     for p in paths:
-        rel = p.relative_to(REPO).as_posix()
+        rel = p.relative_to(REPO_ROOT).as_posix()
         out.append(f"- [x] [{title_of(p)}]({rel})")
     return "\n".join(out)
 
@@ -265,7 +238,7 @@ def main() -> int:
             changed = True
             if not args.check:
                 path.write_text(updated, encoding="utf-8")
-                print(f"updated {path.relative_to(REPO)}")
+                print(f"updated {path.relative_to(REPO_ROOT)}")
 
     if args.check:
         if changed:

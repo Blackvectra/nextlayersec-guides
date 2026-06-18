@@ -23,6 +23,7 @@ on:
       - 'detections/**'
       - 'vulnerabilities/**'
       - 'scripts/validate_content.py'
+      - 'scripts/_shared.py'
       - '.github/workflows/content-correctness.yml'
   push:
     branches: [main]
