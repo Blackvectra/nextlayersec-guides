@@ -174,10 +174,13 @@ def main() -> int:
     else:
         try:
             attack_fail = check_attack_ids()
-        except Exception as exc:  # network failure shouldn't gate CI silently
-            print(f"  WARNING: could not fetch ATT&CK bundle ({exc}). Skipping.")
-            attack_fail = []
-        if attack_fail:
+        except Exception as exc:
+            print(f"  ERROR: could not fetch ATT&CK bundle ({exc}).", file=sys.stderr)
+            all_failures.append(("ATT&CK technique IDs", [f"  Failed to fetch ATT&CK bundle: {exc}"]))
+            attack_fail = None  # sentinel: check did not run
+        if attack_fail is None:
+            print(f"  FAIL — could not fetch ATT&CK bundle (see above).")
+        elif attack_fail:
             all_failures.append(("ATT&CK technique IDs", attack_fail))
             print(f"  FAIL — {len(attack_fail)} issue(s).")
         else:

@@ -157,14 +157,48 @@ jobs:
         run: |
           set -euo pipefail
           # Look for added lines containing github.event.* template
-          # expansions. Best-effort heuristic; zizmor is the authoritative
-          # source. We add value by flagging it in the PR conversation
-          # instead of only in SARIF.
-          if grep -nE '^\+.*\$\{\{\s*github\.event\.' /tmp/guard/workflow.diff >/tmp/guard/interp-hits.txt; then
-            echo "::warning::PR introduces a github.event.* template expansion. Verify it is NOT inside a 'run:' block — assign it to an env: var first and reference the env var from the shell."
-            sed 's/^/  /' /tmp/guard/interp-hits.txt
-            echo ""
-            echo "If the expansion is in an 'env:' block (safe), no action needed. If it's in a 'run:' block, refactor before merge."
-          else
+          # expansions inside `run:` blocks. Best-effort heuristic; zizmor
+          # is the authoritative source. We add value by failing the build
+          # here so the signal lands in the PR conversation, not just SARIF.
+          if ! grep -nE '^\+.*\$\{\{\s*github\.event\.' /tmp/guard/workflow.diff >/tmp/guard/interp-hits.txt; then
             echo "Check 3 PASS — no new github.event.* template expansion."
+            exit 0
           fi
+
+          # Determine whether the expansion is inside a run: block (dangerous)
+          # or an env:/with: block (safe). Walk the diff and track context.
+          in_run=false
+          fail=0
+          current_file=""
+          while IFS= read -r line; do
+            case "$line" in
+              "+++ b/"*) current_file="${line#'+++ b/'}" ;;
+              # Detect `run:` or `run: |` at any indentation (added or context line).
+              [+\ ]*)
+                stripped="${line#[+\ ]}"
+                # Trim leading whitespace for keyword detection.
+                trimmed="${stripped#"${stripped%%[![:space:]]*}"}"
+                case "$trimmed" in
+                  run:*) in_run=true ;;
+                  env:*|with:*|uses:*|if:*|name:*|id:*|"- name:"*) in_run=false ;;
+                esac
+                # Check if this added line contains the dangerous expansion.
+                if [[ "$line" == "+"* ]] && printf '%s' "$line" | grep -qE '\$\{\{\s*github\.event\.'; then
+                  if $in_run; then
+                    echo "FAIL  $current_file: script-injection risk — github.event.* inside run: block"
+                    echo "       $line"
+                    fail=1
+                  else
+                    echo "OK    $current_file: github.event.* in env/with block (safe)"
+                  fi
+                fi
+                ;;
+            esac
+          done < /tmp/guard/workflow.diff
+
+          if [ $fail -eq 1 ]; then
+            echo ""
+            echo "::error::PR introduces github.event.* interpolation inside a run: block. Assign to an env: var first."
+            exit 1
+          fi
+          echo "Check 3 PASS — all github.event.* expansions are in safe (env/with) blocks."

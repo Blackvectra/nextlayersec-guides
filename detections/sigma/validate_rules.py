@@ -34,8 +34,8 @@ def main() -> int:
         from importlib.metadata import version
 
         print(f"pySigma: {version('pysigma')}")
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f"WARNING: could not determine pySigma version: {exc}")
 
     rules = [
         p
