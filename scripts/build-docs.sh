@@ -64,4 +64,4 @@ for f in \
   [ -f "${f}" ] && cp "${f}" "${DEST}/${f}"
 done
 
-echo "Staged $(find ${DEST} -name '*.md' | wc -l) markdown files into ${DEST}/"
+echo "Staged $(find "${DEST}" -name '*.md' | wc -l) markdown files into ${DEST}/"

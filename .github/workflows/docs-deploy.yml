@@ -23,7 +23,28 @@ on:
   push:
     branches: [main]
     paths:
-      - '**/*.md'
+      # Only the content actually staged by scripts/build-docs.sh — both
+      # the content directories and the root-level top-of-site pages.
+      # A blanket '**/*.md' would also fire on excluded files (TODO.md,
+      # .github/*.md) that never reach the build.
+      - 'detections/**/*.md'
+      - 'hardening/**/*.md'
+      - 'blue-team-playbooks/**/*.md'
+      - 'threat-intelligence/**/*.md'
+      - 'vulnerabilities/**/*.md'
+      - 'frameworks/**/*.md'
+      - 'tools/**/*.md'
+      - 'detection-workflows/**/*.md'
+      - 'purple-team-labs/**/*.md'
+      - 'incident-reports/**/*.md'
+      - 'docs/**/*.md'
+      - 'README.md'
+      - 'COVERAGE.md'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'SECURITY.md'
+      - 'SUPPORT.md'
       - 'mkdocs.yml'
       - 'requirements-docs.txt'
       - 'docs-static/**'
