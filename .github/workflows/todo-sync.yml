@@ -16,6 +16,7 @@ on:
       - 'threat-intelligence/**'
       - 'purple-team-labs/**'
       - 'scripts/sync-todo.py'
+      - 'scripts/_shared.py'
       - 'TODO.md'
   pull_request:
     paths:
@@ -26,6 +27,7 @@ on:
       - 'threat-intelligence/**'
       - 'purple-team-labs/**'
       - 'scripts/sync-todo.py'
+      - 'scripts/_shared.py'
       - 'TODO.md'
   workflow_dispatch:
 
