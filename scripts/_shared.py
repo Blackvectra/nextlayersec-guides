@@ -7,6 +7,7 @@ sync-todo.py, and detections/sigma/validate_rules.py.
 from __future__ import annotations
 
 import re
+import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
@@ -52,6 +53,10 @@ def read_text_safe(path: Path) -> str | None:
     try:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
+        print(
+            f"  WARNING: skipping {path.relative_to(REPO_ROOT)} (UnicodeDecodeError)",
+            file=sys.stderr,
+        )
         return None
 
 
@@ -64,7 +69,8 @@ def title_of(md_path: Path) -> str:
         text = md_path.read_text(encoding="utf-8")
         m = TITLE_RE.search(text)
         return m.group(1).strip() if m else md_path.stem
-    except Exception:
+    except Exception as exc:
+        print(f"WARNING: could not read {md_path}: {exc}", file=sys.stderr)
         return md_path.stem
 
 

@@ -173,7 +173,16 @@ jobs:
           # GitHub-managed codeql.yml file. Build fails on medium+ findings.
           # SARIF still uploaded so all findings (including suppressed
           # low-severity informationals) appear in code-scanning.
-          zizmor --config .github/zizmor.yml --format sarif .github/workflows/ > zizmor.sarif || true
+          #
+          # zizmor exits 0 (clean) or 1 (findings). Treat both as
+          # success for SARIF generation; any other exit code means the
+          # tool itself crashed and should surface as a CI failure.
+          sarif_rc=0
+          zizmor --config .github/zizmor.yml --format sarif .github/workflows/ > zizmor.sarif || sarif_rc=$?
+          if [ "$sarif_rc" -gt 1 ]; then
+            echo "::error::zizmor crashed during SARIF generation (exit code $sarif_rc)"
+            exit "$sarif_rc"
+          fi
           zizmor --config .github/zizmor.yml --min-severity=medium --format plain --no-online-audits .github/workflows/
       - name: Upload SARIF
         if: always()
