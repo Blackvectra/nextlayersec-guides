@@ -11,9 +11,14 @@ plus the environment versions for debugging.
 """
 from __future__ import annotations
 
-import glob
-import os
 import sys
+from pathlib import Path
+
+# Make scripts/ importable so we can reuse the shared helpers.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
+from _shared import REPO_ROOT, is_template  # noqa: E402
+
+SIGMA_DIR = REPO_ROOT / "detections" / "sigma"
 
 
 def main() -> int:
@@ -34,8 +39,8 @@ def main() -> int:
 
     rules = [
         p
-        for p in sorted(glob.glob("detections/sigma/*.yml"))
-        if not os.path.basename(p).startswith("_")
+        for p in sorted(SIGMA_DIR.glob("*.yml"))
+        if not is_template(p)
     ]
     if not rules:
         print("No Sigma rules found under detections/sigma/ (nothing to validate).")
@@ -44,12 +49,11 @@ def main() -> int:
     failed = False
     for path in rules:
         try:
-            with open(path, encoding="utf-8") as fh:
-                SigmaCollection.from_yaml(fh.read())
-            print(f"OK   {path}")
+            SigmaCollection.from_yaml(path.read_text(encoding="utf-8"))
+            print(f"OK   {path.relative_to(REPO_ROOT)}")
         except Exception as exc:
             failed = True
-            print(f"FAIL {path}: {type(exc).__name__}: {exc}")
+            print(f"FAIL {path.relative_to(REPO_ROOT)}: {type(exc).__name__}: {exc}")
 
     print("=== ALL PASS ===" if not failed else "=== VALIDATION FAILED ===")
     return 1 if failed else 0

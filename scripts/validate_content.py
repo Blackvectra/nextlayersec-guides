@@ -25,30 +25,8 @@ import os
 import re
 import sys
 import urllib.request
-from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-
-# Files / dirs to skip entirely.
-SKIP_PATHS = {
-    "node_modules",
-    ".git",
-    ".venv",
-    "venv",
-    "__pycache__",
-    "_docs",     # MkDocs build staging (gitignored)
-    "site",      # MkDocs build output (gitignored)
-}
-
-# Paths excluded from content-correctness scanning. These are config /
-# tooling / meta files, not security content. A `T####` placeholder in a
-# workflow YAML prompt template is not a real technique reference.
-SKIP_FOR_CONTENT = {
-    ".github",
-    "scripts",
-    "CHANGELOG.md",
-    "TODO.md",
-}
+from _shared import REPO_ROOT, TECHNIQUE_RE, iter_files, read_text_safe
 
 # Known revoked / deprecated ATT&CK IDs we intentionally keep referencing
 # (e.g., historical actor profiles where the original technique was used
@@ -79,27 +57,8 @@ ATTACK_BUNDLE_URL = (
     f"{ATTACK_BUNDLE_TAG}/enterprise-attack/enterprise-attack.json"
 )
 
-TECHNIQUE_RE = re.compile(r"\bT\d{4}(?:\.\d{3})?\b")
 CVE_RE = re.compile(r"\bCVE-\d{4}-\d{4,7}\b")
 MD_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)#][^)]*?)\)")
-
-
-def iter_files(extensions: set[str], skip_content: bool = False):
-    for path in REPO_ROOT.rglob("*"):
-        if not path.is_file():
-            continue
-        # Defense in depth: skip symlinks so a future committed symlink
-        # can't redirect the validator outside REPO_ROOT.
-        if path.is_symlink():
-            continue
-        if any(part in SKIP_PATHS for part in path.parts):
-            continue
-        if skip_content:
-            rel_parts = path.relative_to(REPO_ROOT).parts
-            if rel_parts and rel_parts[0] in SKIP_FOR_CONTENT:
-                continue
-        if path.suffix.lower() in extensions:
-            yield path
 
 
 def load_attack_techniques() -> set[str]:
@@ -132,9 +91,8 @@ def check_attack_ids() -> list[str]:
     valid = load_attack_techniques()
     seen: dict[str, list[str]] = {}
     for path in iter_files({".md", ".kql", ".yml", ".yaml"}, skip_content=True):
-        try:
-            text = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
+        text = read_text_safe(path)
+        if text is None:
             continue
         for match in TECHNIQUE_RE.findall(text):
             seen.setdefault(match, []).append(str(path.relative_to(REPO_ROOT)))
@@ -161,9 +119,8 @@ def check_cve_filename_match() -> list[str]:
         if not m:
             continue
         expected = m.group(1).upper()
-        try:
-            text = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
+        text = read_text_safe(path)
+        if text is None:
             continue
         body_cves = {cve.upper() for cve in CVE_RE.findall(text)}
         # Allow body to cite related CVEs, but the file's primary CVE must
@@ -179,9 +136,8 @@ def check_cve_filename_match() -> list[str]:
 def check_internal_links() -> list[str]:
     failures: list[str] = []
     for path in iter_files({".md"}, skip_content=True):
-        try:
-            text = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
+        text = read_text_safe(path)
+        if text is None:
             continue
         for target in MD_LINK_RE.findall(text):
             # Skip external links — lychee handles them.
