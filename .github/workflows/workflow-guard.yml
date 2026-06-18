@@ -167,12 +167,19 @@ jobs:
 
           # Determine whether the expansion is inside a run: block (dangerous)
           # or an env:/with: block (safe). Walk the diff and track context.
-          in_run=false
+          #
+          # IMPORTANT: The diff is generated with --unified=0 (no context
+          # lines), so unchanged `run:` keywords preceding an added line
+          # won't appear. Default to in_run=true (fail-closed) so that
+          # missing context conservatively treats the expansion as dangerous.
+          # This may produce false positives, but a security check must
+          # never produce false negatives.
+          in_run=true
           fail=0
           current_file=""
           while IFS= read -r line; do
             case "$line" in
-              "+++ b/"*) current_file="${line#'+++ b/'}" ;;
+              "+++ b/"*) current_file="${line#'+++ b/'}"; in_run=true ;;
               # Detect `run:` or `run: |` at any indentation (added or context line).
               [+\ ]*)
                 stripped="${line#[+\ ]}"
@@ -185,7 +192,7 @@ jobs:
                 # Check if this added line contains the dangerous expansion.
                 if [[ "$line" == "+"* ]] && printf '%s' "$line" | grep -qE '\$\{\{\s*github\.event\.'; then
                   if $in_run; then
-                    echo "FAIL  $current_file: script-injection risk — github.event.* inside run: block"
+                    echo "FAIL  $current_file: script-injection risk — github.event.* inside run: block (or unknown context)"
                     echo "       $line"
                     fail=1
                   else
