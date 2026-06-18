@@ -57,7 +57,7 @@ This repository provides structured, practical resources to support defensive se
   - [CVE → Framework Mapping Template](vulnerabilities/template.md)
 
 ## Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md) for structure, templates, and CI checks. Open backlog in [TODO.md](TODO.md). Notable changes tracked in [CHANGELOG.md](CHANGELOG.md). MITRE ATT&CK coverage map: [COVERAGE.md](COVERAGE.md). Scheduled reminder/draft automation: [.github/AUTOMATION.md](.github/AUTOMATION.md). Security policy: [SECURITY.md](SECURITY.md). Licensed under [MIT](LICENSE).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for structure, templates, and CI checks. Open backlog in [TODO.md](https://github.com/Blackvectra/nextlayersec-guides/blob/main/TODO.md). Notable changes tracked in [CHANGELOG.md](CHANGELOG.md). MITRE ATT&CK coverage map: [COVERAGE.md](COVERAGE.md). Scheduled reminder/draft automation: [.github/AUTOMATION.md](https://github.com/Blackvectra/nextlayersec-guides/blob/main/.github/AUTOMATION.md). Security policy: [SECURITY.md](SECURITY.md). Licensed under [MIT](LICENSE).
 
 ---
 
