@@ -1,0 +1,9 @@
+# Test dependencies for running the unit test suite.
+#
+# Install with: pip install -r requirements-test.txt
+# Run tests:    python -m pytest tests/ -v
+# With coverage: python -m pytest tests/ --cov=scripts --cov=detections/sigma --cov-report=term-missing
+
+pytest>=8.0,<10
+pytest-cov>=5.0,<8
+pysigma>=1.3.3,<2
