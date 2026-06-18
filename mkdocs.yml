@@ -207,6 +207,10 @@ nav:
       - CVE-2026-10520 (Ivanti Sentry OS cmd injection): vulnerabilities/CVE-2026-10520.md
   - Frameworks:
       - NIST CSF 2.0: frameworks/nist-csf.md
+      - MITRE ATT&CK: frameworks/mitre-attack.md
+      - ISO 27001: frameworks/iso-27001.md
+      - IRS Publication 1075: frameworks/irs-pub-1075.md
+      - SOC 2: frameworks/soc2.md
   - Tools:
       - Blue-team tools: tools/blue-team-tools.md
   - Contributing:

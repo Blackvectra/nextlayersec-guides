@@ -72,9 +72,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-docs.txt
 
+      - name: Stage content into _docs/
+        # MkDocs config uses `docs_dir: _docs` because mkdocs forbids
+        # docs_dir being the config-file parent. The stage script copies
+        # the markdown / images from the repo root into _docs/ via
+        # find+cp (no rsync dependency).
+        run: bash scripts/build-docs.sh
+
       - name: Build MkDocs site
-        run: |
-          mkdocs build --strict=false --site-dir ./site
+        # Build without --strict for now: a couple of pre-existing
+        # directory-as-link refs (e.g., frameworks/nist-csf.md →
+        # ../detection-workflows/) render correctly but mkdocs' strict
+        # checker rejects them. Flip to --strict after a content
+        # cleanup pass that normalizes those refs to point at a
+        # specific .md file.
+        run: mkdocs build --site-dir ./site
 
       - name: Add CNAME for custom domain
         run: |
