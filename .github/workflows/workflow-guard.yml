@@ -45,7 +45,7 @@ jobs:
           egress-policy: audit
           disable-sudo-and-containers: true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false

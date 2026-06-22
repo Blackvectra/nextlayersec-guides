@@ -57,7 +57,7 @@ jobs:
           disable-sudo-and-containers: true
           disable-file-monitoring: false
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 

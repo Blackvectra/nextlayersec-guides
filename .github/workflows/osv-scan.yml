@@ -63,7 +63,7 @@ jobs:
           egress-policy: audit
           disable-sudo: true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
