@@ -7,7 +7,7 @@
 # Local development: `pip install -r requirements-docs.txt && mkdocs serve`
 # then open http://127.0.0.1:8000/
 
-mkdocs-material>=9.5,<10
+mkdocs-material>=9.7.6,<10
 mkdocs-awesome-pages-plugin>=2.9,<3
 
 # Pinned indirectly via mkdocs-material's transitive set:
