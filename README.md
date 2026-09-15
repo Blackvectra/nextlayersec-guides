@@ -76,3 +76,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for structure, templates, and CI checks. 
 ```bash
 git clone https://github.com/Blackvectra/nextlayersec-guides.git
 cd nextlayersec-guides
+```
+
+Browse the markdown directly in the repo, or serve the rendered MkDocs site locally:
+
+```bash
+pip install -r requirements-docs.txt
+mkdocs serve
+```
+
+Or skip the setup and read the hosted copy at [docs.nls-assessment.app](https://docs.nls-assessment.app/).
