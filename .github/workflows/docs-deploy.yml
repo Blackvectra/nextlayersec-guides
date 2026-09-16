@@ -92,13 +92,15 @@ jobs:
         run: |
           # docs-static/CNAME is the source of truth. Copy into the
           # build output so GitHub Pages serves the custom domain.
+          # No CNAME file currently means no custom domain is configured
+          # (docs.nls-assessment.app's DNS was never set up) -- fall back
+          # to the default github.io URL rather than fail the build.
           if [ -f docs-static/CNAME ]; then
             cp docs-static/CNAME ./site/CNAME
             echo "CNAME contents:"
             cat ./site/CNAME
           else
-            echo "::error::docs-static/CNAME not found — the custom-domain Pages config will be cleared on deploy."
-            exit 1
+            echo "No docs-static/CNAME -- deploying to the default github.io URL."
           fi
 
       - name: Copy static assets
