@@ -49,6 +49,8 @@ ba  = "ba"           # appears in encoded strings / examples
 te  = "te"           # appears as TE acronym
 hsa = "hsa"          # appears in HSA acronym contexts
 TABL = "TABL"        # Microsoft Tenant Allow/Block List (anti-phishing content)
+Mis = "Mis"          # "Mis-configured" (hyphenated mis- prefix), not a typo for "Miss"/"Mist"
+mis = "mis"          # lowercase form, same reason
 
 [default.extend-identifiers]
 # Function / variable names that the spell-checker should leave alone.
