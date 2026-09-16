@@ -36,7 +36,7 @@ on:
   workflow_call:
     inputs:
       workflow:
-        description: 'Name of the calling workflow (typically ${{ github.workflow }}).'
+        description: 'Name of the calling workflow (typically its github.workflow value).'
         required: true
         type: string
       job:
