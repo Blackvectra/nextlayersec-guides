@@ -1,8 +1,9 @@
 # MkDocs configuration — NextLayerSec Guides docs site.
 #
-# Published at https://docs.nls-assessment.app (custom domain, CNAME
-# in /docs-static/CNAME → blackvectra.github.io). Built and deployed
-# by .github/workflows/docs-deploy.yml on every push to main.
+# Published at https://blackvectra.github.io/nextlayersec-guides/ (default
+# GitHub Pages URL -- the docs.nls-assessment.app custom domain was never
+# connected at DNS, so we fall back to the default until it is). Built and
+# deployed by .github/workflows/docs-deploy.yml on every push to main.
 #
 # We can't point docs_dir at the repo root directly (MkDocs forbids
 # docs_dir being the config-file parent). Instead `scripts/build-docs.sh`
@@ -15,7 +16,7 @@ site_name: NextLayerSec Guides
 site_description: >-
   Blue-team playbooks, detection workflows, hardening baselines, and
   threat-intelligence documentation for SOC teams, MSPs, and students.
-site_url: https://docs.nls-assessment.app/
+site_url: https://blackvectra.github.io/nextlayersec-guides/
 site_author: NextLayerSec
 repo_name: Blackvectra/nextlayersec-guides
 repo_url: https://github.com/Blackvectra/nextlayersec-guides

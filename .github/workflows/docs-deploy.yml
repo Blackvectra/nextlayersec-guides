@@ -1,9 +1,8 @@
 # Build the MkDocs Material docs site and deploy it to GitHub Pages.
 #
-# Site lives at https://docs.nls-assessment.app (custom domain — DNS
-# CNAME record points to blackvectra.github.io, and the CNAME file at
-# docs-static/CNAME is copied into the build artifact so Pages serves
-# the custom domain).
+# Site lives at https://blackvectra.github.io/nextlayersec-guides/ (default
+# GitHub Pages URL). The docs.nls-assessment.app custom domain was never
+# connected at DNS; switch back to a CNAME-based build once that's set up.
 #
 # Triggers:
 #   - Push to main that touches any content file → rebuild + redeploy.
