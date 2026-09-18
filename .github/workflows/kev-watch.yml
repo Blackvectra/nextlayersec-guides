@@ -155,6 +155,14 @@ jobs:
           CVE=$(printf '%s' "$PICK_JSON" | python3 -c 'import sys, json; print(json.load(sys.stdin)["cve"])')
           TITLE="KEV add: ${CVE} — needs write-up in vulnerabilities/"
 
+          # Ensure the labels this issue needs exist. `gh issue create --label`
+          # fails outright if a label is missing, which is what silently broke
+          # every run of this workflow (the repo never had "vulnerability").
+          gh label create "vulnerability" --repo "$REPO" \
+            --color "d73a4a" --description "Tracks a CVE write-up" --force
+          gh label create "kev" --repo "$REPO" \
+            --color "b60205" --description "Sourced from the CISA KEV catalog" --force
+
           existing=$(gh issue list --repo "$REPO" --state open --search "in:title \"${TITLE}\"" --json number --jq '.[0].number // ""')
           if [ -n "$existing" ]; then
             echo "Issue already open for ${CVE} (#${existing}). Skipping."
