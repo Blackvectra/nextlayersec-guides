@@ -130,7 +130,7 @@ jobs:
               ;;
             Sat)
               TITLE="🧹 Saturday — Cleanup day"
-              COLOR=9807270   # grey
+              COLOR=9807270   # gray
               DESC=$(printf '%s\n\n%s' \
                 "Repo hygiene: run lint, fix links, prune stale TODOs." \
                 "→ \`npx markdownlint-cli2 \"**/*.md\"\` · [CONTRIBUTING]($BASE/CONTRIBUTING.md)")
