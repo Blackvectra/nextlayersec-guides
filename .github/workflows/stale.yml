@@ -42,7 +42,7 @@ jobs:
           egress-policy: audit
           disable-sudo-and-containers: true
 
-      - uses: actions/stale@v10
+      - uses: actions/stale@v11
         with:
           days-before-issue-stale: 60
           days-before-issue-close: 14
