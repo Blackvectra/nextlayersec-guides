@@ -48,7 +48,11 @@ jobs:
         uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
-          disable-sudo-and-containers: true
+          # NOT disable-sudo-and-containers here: that uninstalls Docker, and
+          # ossf/scorecard-action is a Docker action, so it then dies with
+          # "permission denied ... /var/run/docker.sock". Sudo is still
+          # disabled; only the container runtime is left in place.
+          disable-sudo: true
 
       - name: Checkout
         uses: actions/checkout@v6
